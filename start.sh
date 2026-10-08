@@ -20,7 +20,12 @@ echo "Starting web terminal on port ${PORT} as user '${USER_NAME}'"
 
 # Web terminal on the port Render provides, protected by basic auth.
 # -W writable, -m max simultaneous clients, -t client options.
-exec ttyd -W -p "${PORT}" -m 5 \
+#
+# The terminal runs as the normal user "student" (not root). Use `sudo` when
+# a tool needs root privileges.
+cd /home/student
+exec runuser -u student -- env HOME=/home/student USER=student LOGNAME=student \
+  ttyd -W -p "${PORT}" -m 5 \
   -c "${USER_NAME}:${TERMINAL_PASSWORD}" \
   -t fontSize=15 -t disableLeaveAlert=true \
   tmux new -A -s main bash

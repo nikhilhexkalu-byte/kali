@@ -13,6 +13,7 @@ Kali Linux container with a browser-based terminal ([ttyd](https://github.com/ts
 
 - Open `https://<your-service>.onrender.com` (or your custom domain) and log in with the basic-auth prompt.
 - You land in a shared `tmux` session named `main`; it survives browser refreshes.
+- The shell runs as the normal user `student` (home `/home/student`, not root). Use `sudo <cmd>` or `sudo -i` when root is needed (passwordless, lab convenience).
 - Command line access to the same terminal: `https://USER:PASSWORD@<host>/` in a browser. ttyd speaks WebSocket, so it is not a REST API.
 
 ## Notes

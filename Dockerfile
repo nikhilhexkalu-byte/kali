@@ -18,19 +18,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && ( [ -f /usr/share/wordlists/rockyou.txt.gz ] && gunzip -kf /usr/share/wordlists/rockyou.txt.gz || true )
 
-# Nicer shell
+# Normal (non-root) user for the lab. Has sudo for tools that need root
+# (e.g. `sudo nmap -sS`). Lab convenience: passwordless sudo.
+RUN useradd -m -u 1000 -s /bin/bash student \
+    && usermod -aG sudo student \
+    && echo 'student ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/student \
+    && chmod 0440 /etc/sudoers.d/student
+
+# Nicer shell for the student user
 RUN printf '%s\n' \
-      "export PS1='\\[\\e[1;32m\\]\\u@pentestlab\\[\\e[0m\\]:\\[\\e[1;34m\\]\\w\\[\\e[0m\\]# '" \
+      "export PS1='\\[\\e[1;32m\\]\\u@pentestlab\\[\\e[0m\\]:\\[\\e[1;34m\\]\\w\\[\\e[0m\\]\\$ '" \
       "alias ll='ls -lah --color=auto'" \
       "alias ls='ls --color=auto'" \
       "echo 'PentestLab ready. Scan only systems you own or are authorised to test.'" \
-      >> /root/.bashrc
+      >> /home/student/.bashrc \
+    && chown student:student /home/student/.bashrc
 
 COPY start.sh /start.sh
 # strip Windows line endings (if any) and make executable
 RUN sed -i 's/\r$//' /start.sh && chmod +x /start.sh
 
-WORKDIR /root
+WORKDIR /home/student
 
 # Render injects $PORT at runtime; start.sh listens on it
 EXPOSE 10000
