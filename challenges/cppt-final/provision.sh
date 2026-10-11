@@ -150,9 +150,10 @@ read the flag.
 The flag format is: CHX{...}
 
 Hints:
-  - Start with local service discovery
+  - Start with local service discovery (ss -tlnp, curl, nmap -sT)
   - Look for common web vulnerabilities
   - Not everything runs as root
+  - Think SUID
 
 Good luck.
 EOF

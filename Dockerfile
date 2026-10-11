@@ -32,8 +32,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends libcap2-bin \
         useradd -m -s /bin/bash "lab${i}" && \
         chmod 700 "/home/lab${i}" ; \
     done \
-    && setcap cap_net_raw+ep /usr/bin/nmap 2>/dev/null || true \
-    && setcap cap_net_raw+ep /usr/sbin/tcpdump 2>/dev/null || true
+    && setcap -r /usr/bin/nmap 2>/dev/null || true \
+    && setcap -r /usr/lib/nmap/nmap 2>/dev/null || true \
+    && setcap -r /usr/sbin/tcpdump 2>/dev/null || true
 
 # ── Per-user shell config (prompt, proxy, banner) ────────────────
 COPY setup-bashrc.sh /tmp/setup-bashrc.sh
