@@ -3,7 +3,7 @@ set -e
 
 # ── Config ───────────────────────────────────────────────────────
 PORT="${PORT:-10000}"
-MAX_LABS="${MAX_LABS:-10}"
+MAX_LABS="${MAX_LABS:-4}"
 SESSION_TIMEOUT="${SESSION_TIMEOUT:-900}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 ALLOWED_DOMAIN="${ALLOWED_DOMAIN:-cyberhx.com}"
@@ -22,12 +22,15 @@ echo "╚═══════════════════════�
 if [ -z "$ADMIN_PASSWORD" ]; then
   ADMIN_PASSWORD="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24)"
   echo ""
-  echo "⚠  ADMIN_PASSWORD not set — generated one:"
-  echo "   Admin panel : https://<host>/admin"
-  echo "   Password    : ${ADMIN_PASSWORD}"
+  echo "⚠  ADMIN_PASSWORD not set — generated one."
   echo "   Set ADMIN_PASSWORD env var in Render to make it permanent."
+  echo "   View credentials at: https://<host>/admin"
   echo ""
 fi
+
+# Save admin password to root-only file (accessible via Render shell, not in logs)
+echo "$ADMIN_PASSWORD" > /tmp/.admin-password
+chmod 600 /tmp/.admin-password
 
 # ── Generate per-lab credentials ─────────────────────────────────
 # Create creds file with restricted permissions (root-only)
@@ -47,7 +50,8 @@ for i in $(seq 1 "$MAX_LABS"); do
     PASSWORD="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 16)"
   fi
 
-  printf "│ %-4s │ %-8s │ %-22s │ %-12s │\n" "$i" "lab${i}" "$PASSWORD" "/lab/${i}/"
+  MASKED_PW="${PASSWORD:0:4}************"
+  printf "│ %-4s │ %-8s │ %-22s │ %-12s │\n" "$i" "lab${i}" "$MASKED_PW" "/lab/${i}/"
 
   # Write to creds file
   COMMA=""

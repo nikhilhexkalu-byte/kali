@@ -15,11 +15,13 @@ export HISTFILESIZE=0
 shopt -s histappend 2>/dev/null
 
 # Sandbox proxy – only *.cyberhx.com reachable
+# Marked readonly so users can't simply `unset` them
 export http_proxy="http://127.0.0.1:8888"
 export https_proxy="http://127.0.0.1:8888"
 export HTTP_PROXY="http://127.0.0.1:8888"
 export HTTPS_PROXY="http://127.0.0.1:8888"
 export no_proxy="localhost,127.0.0.1"
+readonly http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy 2>/dev/null
 
 clear
 echo ""

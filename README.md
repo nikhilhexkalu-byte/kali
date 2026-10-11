@@ -4,12 +4,13 @@ Multi-user sandboxed Kali Linux lab with browser-based terminals. Built for secu
 
 ## Features
 
-- **10 isolated lab slots** — each user gets a separate terminal, user account and password
+- **4 isolated lab slots** (configurable up to 10) — each user gets a separate terminal, user account and password
 - **15-minute auto-expiry** — sessions are killed automatically after the timeout
 - **Sandboxed network** — only `*.cyberhx.com` is reachable (enforced by proxy + iptables when available)
+- **Hardened security** — locked-down sudo, rate limiting, resource limits, audit logging
 - **Admin dashboard** — see all credentials, copy/download CSV, monitor active sessions
 - **Auto-recovery** — crashed labs restart automatically via watchdog
-- **Single-port architecture** — Nginx reverse-proxies all 10 labs through Render's single `$PORT`
+- **Single-port architecture** — Nginx reverse-proxies all labs through Render's single `$PORT`
 
 ## Architecture
 
@@ -39,8 +40,8 @@ Internet ─► Render ($PORT)
 
 | Variable | Default | Description |
 |---|---|---|
-| `ADMIN_PASSWORD` | *random (see logs)* | Password for `/admin` panel |
-| `MAX_LABS` | `10` | Number of lab slots (reduce for less RAM) |
+| `ADMIN_PASSWORD` | *random (see admin panel)* | Password for `/admin` panel |
+| `MAX_LABS` | `4` | Number of lab slots (up to 10, reduce for less RAM) |
 | `SESSION_TIMEOUT` | `900` | Session timeout in seconds (900 = 15 min) |
 | `ALLOWED_DOMAIN` | `cyberhx.com` | Whitelisted domain for sandbox |
 | `LAB_1_PASSWORD` … `LAB_10_PASSWORD` | *random* | Fixed password for a specific lab |
@@ -66,14 +67,26 @@ Internet ─► Render ($PORT)
 
 Network restriction uses two layers:
 
-1. **Tinyproxy** (always active) — HTTP/HTTPS whitelist proxy that only allows `*.cyberhx.com`
+1. **Tinyproxy** (always active) — HTTP/HTTPS whitelist proxy that only allows `*.cyberhx.com`. CONNECT method restricted to ports 443/563.
 2. **iptables** (when available) — blocks all direct outbound traffic from lab users, forcing everything through the proxy
 
-If the container lacks `NET_ADMIN` capability (common on free plans), only the proxy layer is active. Lab users' shells have `HTTP_PROXY`/`HTTPS_PROXY` pre-configured.
+If the container lacks `NET_ADMIN` capability (common on free plans), only the proxy layer is active. Lab users' shells have `HTTP_PROXY`/`HTTPS_PROXY` pre-configured as `readonly` bash variables.
+
+## Security Hardening
+
+- **Sudo lockdown** — only `nmap` and `tcpdump` allowed (no blanket root access)
+- **Resource limits** — `ulimit` restricts processes (50), file size (100MB), open files (256), memory (256MB)
+- **Rate limiting** — nginx rate-limits admin/auth endpoints (5 req/min) to prevent brute-force
+- **Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`
+- **Audit logging** — all lab user commands logged to `/var/log/lab-audit.log`
+- **Credential protection** — passwords masked in logs, credential files root-only (chmod 600)
+- **Home isolation** — user home directories set to `700` (no cross-user access)
+- **Session protection** — session tracking files root-only, user-targeted process cleanup
 
 ## Notes
 
 - Containers on Render are ephemeral — files are lost on redeploy/restart
-- Each lab user has passwordless `sudo` for tools that need root (e.g. `sudo nmap -sS`)
+- Each lab user has passwordless `sudo` only for `nmap` and `tcpdump` (raw socket tools)
 - Raw-socket scans may be limited; prefer `nmap -sT -Pn`
+- All commands are logged to `/var/log/lab-audit.log` for forensics
 - Only test systems you own or have written permission to test
