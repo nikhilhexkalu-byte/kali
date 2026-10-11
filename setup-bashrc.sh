@@ -1,5 +1,8 @@
 #!/bin/bash
 # Creates a Parrot OS-styled .bashrc for each lab user
+# Also saves a clean copy at /etc/cyberhx/clean-bashrc for restoration
+# after a slot is wiped between students.
+mkdir -p /etc/cyberhx
 for i in $(seq 1 10); do
   cat > "/home/lab${i}/.bashrc" <<'BASHRC'
 # ── Parrot OS style prompt ─────────────────────────────────
@@ -41,4 +44,6 @@ echo -e "   \e[0;90mOnly test systems you have permission for.\e[0m"
 echo ""
 BASHRC
   chown "lab${i}:lab${i}" "/home/lab${i}/.bashrc"
+  [ "$i" -eq 1 ] && cp "/home/lab1/.bashrc" /etc/cyberhx/clean-bashrc
 done
+chmod 600 /etc/cyberhx/clean-bashrc

@@ -194,24 +194,12 @@ def stop_lab(lab_num):
                 pass
         del ttyd_procs[lab_num]
 
-    subprocess.run(['pkill', '-9', '-u', user], capture_output=True)
-
-    for f in (f'/tmp/.lab-session-{lab_num}', f'/tmp/.lab-end-time-{lab_num}'):
-        try:
-            os.remove(f)
-        except OSError:
-            pass
-
-    home = f'/home/{user}'
-    subprocess.run(
-        ['find', home, '-maxdepth', '1',
-         '-not', '-name', '.bashrc', '-not', '-name', '.profile',
-         '-not', '-name', '.', '-newer', f'{home}/.bashrc',
-         '-exec', 'rm', '-rf', '{}', '+'],
-        capture_output=True,
-    )
-
     teardown_challenge(lab_num)
+
+    subprocess.run(
+        ['/usr/local/bin/lab-cleanup.sh', str(lab_num)],
+        capture_output=True, timeout=30,
+    )
 
 
 # ── Challenge provisioning ─────────────────────────────────────────

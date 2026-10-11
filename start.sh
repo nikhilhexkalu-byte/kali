@@ -120,12 +120,21 @@ if command -v iptables &>/dev/null; then
     for i in $(seq 1 "$MAX_LABS"); do
       uid=$(id -u "lab${i}" 2>/dev/null || true)
       if [ -n "$uid" ]; then
+        # Block infrastructure ports BEFORE allowing general localhost
+        iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -p tcp --dport 9090 -j DROP
+        iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -p tcp --dport 10000 -j DROP
+        # Block other slots' challenge ports (each slot uses 8000+lab_num)
+        for j in $(seq 1 "$MAX_LABS"); do
+          if [ "$j" -ne "$i" ]; then
+            iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -p tcp --dport $((8000 + j)) -j DROP
+          fi
+        done
         iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -j ACCEPT
         iptables -A OUTPUT -m owner --uid-owner "$uid" -j DROP
       fi
     done
 
-    echo "[+] Firewall rules applied — lab users forced through proxy"
+    echo "[+] Firewall rules applied — lab users locked to own slot, infra ports blocked"
   fi
 fi
 

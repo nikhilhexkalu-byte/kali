@@ -25,17 +25,9 @@ while true; do
       if [ "$ELAPSED" -ge "$((SESSION_TIMEOUT + 30))" ]; then
         echo "[session-mgr] Lab ${i}: session expired (${ELAPSED}s) — cleaning up"
 
-        # Kill all user processes
-        pkill -9 -u "$LAB_USER" 2>/dev/null || true
+        /usr/local/bin/lab-cleanup.sh "$i"
 
-        # Remove session file
-        rm -f "$SESSION_FILE"
-
-        # Clean user's home (reset for next user)
-        find "/home/${LAB_USER}" -maxdepth 1 -not -name ".bashrc" -not -name ".profile" \
-          -not -name "." -newer "/home/${LAB_USER}/.bashrc" -exec rm -rf {} + 2>/dev/null || true
-
-        echo "[session-mgr] Lab ${i}: cleaned up and ready for next user"
+        echo "[session-mgr] Lab ${i}: fully sanitized and ready for next user"
       fi
     fi
   done
