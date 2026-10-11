@@ -196,8 +196,9 @@ for i in $(seq 1 "$MAX_LABS"); do
     -b "/lab/${i}" \
     -m 2 \
     -c "lab${i}:${PASSWORD}" \
-    -t fontSize=15 \
-    -t fontFamily="'JetBrains Mono','Fira Code','Cascadia Code',monospace" \
+    -t fontSize=14 \
+    -t fontFamily="'Hack','DejaVu Sans Mono','Liberation Mono','Courier New',monospace" \
+    -t theme='{"background":"#1a1a2e","foreground":"#c8d3f5","cursor":"#82aaff","selectionBackground":"#2d4f67","black":"#1a1a2e","red":"#ff6e6e","green":"#98c379","yellow":"#e5c07b","blue":"#82aaff","magenta":"#c792ea","cyan":"#89ddff","white":"#c8d3f5","brightBlack":"#545c7e","brightRed":"#ff6e6e","brightGreen":"#98c379","brightYellow":"#e5c07b","brightBlue":"#82aaff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}' \
     -t disableLeaveAlert=true \
     -t enableSixel=false \
     /usr/local/bin/lab-shell.sh "$i" &
@@ -245,8 +246,9 @@ while true; do
         -b "/lab/${i}" \
         -m 2 \
         -c "lab${i}:${PASSWORD}" \
-        -t fontSize=15 \
-        -t fontFamily="'JetBrains Mono','Fira Code','Cascadia Code',monospace" \
+        -t fontSize=14 \
+        -t fontFamily="'Hack','DejaVu Sans Mono','Liberation Mono','Courier New',monospace" \
+        -t theme='{"background":"#1a1a2e","foreground":"#c8d3f5","cursor":"#82aaff","selectionBackground":"#2d4f67","black":"#1a1a2e","red":"#ff6e6e","green":"#98c379","yellow":"#e5c07b","blue":"#82aaff","magenta":"#c792ea","cyan":"#89ddff","white":"#c8d3f5","brightBlack":"#545c7e","brightRed":"#ff6e6e","brightGreen":"#98c379","brightYellow":"#e5c07b","brightBlue":"#82aaff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}' \
         -t disableLeaveAlert=true \
         -t enableSixel=false \
         /usr/local/bin/lab-shell.sh "$i" &
