@@ -175,8 +175,9 @@ for i in $(seq 1 "$MAX_LABS"); do
 done
 echo ']}' >> /var/www/landing/labs-public.json
 
-# Full credentials for admin endpoint
+# Full credentials for admin endpoint (readable by nginx worker)
 cp "$CREDS_FILE" /var/www/landing/labs-admin.json
+chmod 644 /var/www/landing/labs-admin.json
 
 # ── Start nginx ──────────────────────────────────────────────────
 echo "[*] Starting nginx on port ${PORT}..."
