@@ -542,9 +542,11 @@ def lease_create(body):
     # Provision the challenge (and its per-attempt flag) before exposing the shell.
     flag_sha256 = None
     if challenge_id:
-        flag = secrets.token_hex(16)
+        # Hash exactly the string that gets planted — the learner submits the
+        # whole CHX{...} token, so hashing the bare hex would never match.
+        flag = f'CHX{{{secrets.token_hex(16)}}}'
         flag_sha256 = hashlib.sha256(flag.encode()).hexdigest()
-        ok, err = provision_challenge(lab_num, challenge_id, f'CHX{{{flag}}}')
+        ok, err = provision_challenge(lab_num, challenge_id, flag)
         if not ok:
             release_lease(lab_num)
             return {'error': err}, 503
