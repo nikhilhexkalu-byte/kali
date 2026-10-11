@@ -23,17 +23,24 @@ http {
     # Rate limiting for auth endpoints (brute-force protection)
     limit_req_zone $binary_remote_addr zone=auth:1m rate=5r/m;
     limit_req_zone $binary_remote_addr zone=api:1m rate=30r/m;
+    # Lease API: called server-to-server by pentestlab.cyberhx.com, so the
+    # cap is per source IP and generous enough for polling a live exam.
+    limit_req_zone $binary_remote_addr zone=lease:1m rate=120r/m;
 
     server {
         listen __PORT__;
         server_name _;
 
         # ── Security headers ──────────────────────────────────
+        # frame-ancestors is templated from ALLOWED_FRAME_ANCESTORS so the
+        # exam site can embed the terminal. X-Frame-Options is only emitted
+        # when framing is same-origin-only: it has no multi-origin form, and
+        # sending SAMEORIGIN alongside a wider CSP would block the embed.
         add_header X-Content-Type-Options "nosniff" always;
-        add_header X-Frame-Options "SAMEORIGIN" always;
+        __XFO_HEADER__
         add_header Referrer-Policy "no-referrer" always;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors __CSP_FRAME_ANCESTORS__; base-uri 'self'; form-action 'self'" always;
 
         # ── Landing page ─────────────────────────────────────
         root /var/www/landing;
@@ -51,13 +58,17 @@ http {
             proxy_pass http://127.0.0.1:9090;
             proxy_http_version 1.1;
             proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
+            # Strip any client-supplied admin marker: only auth_basic routes set it.
+            proxy_set_header X-CHX-Admin "";
         }
 
         location = /api/exam/start {
             limit_req zone=api burst=2 nodelay;
+            __DEMO_AUTH__
             proxy_pass http://127.0.0.1:9090;
             proxy_http_version 1.1;
             proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
+            proxy_set_header X-CHX-Admin "__DEMO_ADMIN_FLAG__";
         }
 
         location = /api/exam/reset {
@@ -67,6 +78,7 @@ http {
             proxy_pass http://127.0.0.1:9090;
             proxy_http_version 1.1;
             proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
+            proxy_set_header X-CHX-Admin "1";
         }
 
         # ── Admin panel (password protected, rate-limited) ────
@@ -86,6 +98,21 @@ http {
             proxy_pass http://127.0.0.1:9090;
             proxy_http_version 1.1;
             proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
+            proxy_set_header X-CHX-Admin "1";
+        }
+
+        # ── Lease API (server-to-server, HMAC-authenticated) ──
+        # Authorisation is the X-CHX-Signature HMAC verified by lab-api, not
+        # the internal token: nginx attaches that token to every proxied
+        # request, so it can never stand in for a caller's identity.
+        location /api/v1/ {
+            limit_req zone=lease burst=20 nodelay;
+            proxy_pass http://127.0.0.1:9090;
+            proxy_http_version 1.1;
+            proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
+            proxy_set_header X-CHX-Admin "";
+            proxy_set_header Host $host;
+            proxy_read_timeout 180s;
         }
 
         # ── Static assets ────────────────────────────────────

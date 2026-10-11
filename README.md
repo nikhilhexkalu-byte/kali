@@ -2,6 +2,18 @@
 
 Multi-user sandboxed Kali Linux lab with browser-based terminals. Built for security training on [Render](https://render.com) free plan.
 
+Two ways in:
+
+* **Lease API** (`/api/v1/*`) — how `pentestlab.cyberhx.com` leases one isolated
+  lab slot per exam attempt. Server-to-server, HMAC-signed. See
+  [INTEGRATION.md](INTEGRATION.md).
+* **Demo walkthrough** (`/`) — the local staged exam used for testing. Behind
+  admin login unless `PUBLIC_DEMO=true`.
+
+> **No challenge ships in this image.** The six labs are identical Kali shells
+> with no target and no flag. [CHALLENGES.md](CHALLENGES.md) documents the hook
+> for adding your own.
+
 ## Features
 
 - **4 isolated lab slots** (configurable up to 10) — each user gets a separate terminal, user account and password
@@ -18,6 +30,7 @@ Multi-user sandboxed Kali Linux lab with browser-based terminals. Built for secu
 Internet ─► Render ($PORT)
              │
              ├─ Nginx reverse proxy
+             │    ├─ /api/v1/*   → Lease API     (HMAC, server-to-server)
              │    ├─ /           → Landing page  (public)
              │    ├─ /admin      → Admin panel   (password protected)
              │    ├─ /lab/1/     → ttyd :7681    (lab1 user, own password)
@@ -44,7 +57,12 @@ Internet ─► Render ($PORT)
 | `MAX_LABS` | `4` | Number of lab slots (up to 10, reduce for less RAM) |
 | `SESSION_TIMEOUT` | `900` | Session timeout in seconds (900 = 15 min) |
 | `ALLOWED_DOMAIN` | `cyberhx.com` | Whitelisted domain for sandbox |
-| `LAB_1_PASSWORD` … `LAB_10_PASSWORD` | *random* | Fixed password for a specific lab |
+| `LAB_1_PASSWORD` … `LAB_10_PASSWORD` | *random* | Starting password for a lab (leases rotate it per session) |
+| `LEASE_SECRET` | *unset* | **Required for the exam integration.** Shared secret for `/api/v1/*`; must match `LAB_LEASE_SECRET` on the exam site. Unset = lease API disabled. |
+| `ALLOWED_FRAME_ANCESTORS` | `'self'` | Who may embed the terminal. Use `'self' https://pentestlab.cyberhx.com` to show it inside the exam. |
+| `PUBLIC_DEMO` | `false` | `true` lets anyone start the demo walkthrough and consume lab capacity. |
+| `MAX_LEASE_SECONDS` | `7200` | Upper bound on one lease. |
+| `CHALLENGE_DIR` | `/opt/challenges` | Where challenge provisioning scripts live. |
 
 ## URLs
 

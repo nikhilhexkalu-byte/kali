@@ -8,6 +8,13 @@ SESSION_TIMEOUT="${SESSION_TIMEOUT:-900}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 ALLOWED_DOMAIN="${ALLOWED_DOMAIN:-cyberhx.com}"
 CREDS_FILE="/tmp/lab-credentials.json"
+# Shared secret the exam site signs lease requests with. Unset = lease API off.
+LEASE_SECRET="${LEASE_SECRET:-}"
+# Who may embed the terminal in an iframe. Default: same origin only.
+ALLOWED_FRAME_ANCESTORS="${ALLOWED_FRAME_ANCESTORS:-'self'}"
+# Whether anonymous visitors can start the local demo exam.
+PUBLIC_DEMO="${PUBLIC_DEMO:-false}"
+export PUBLIC_DEMO
 
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║        CyberHX Pentest Exam — Starting Up               ║"
@@ -38,6 +45,19 @@ INTERNAL_TOKEN="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -
 echo "$INTERNAL_TOKEN" > /tmp/.api-token
 chmod 600 /tmp/.api-token
 export INTERNAL_TOKEN
+
+# ── Lease API shared secret ──────────────────────────────────────
+# Must match LAB_LEASE_SECRET on pentestlab.cyberhx.com. Without it the
+# /api/v1 lease API stays disabled and the site cannot start labs.
+if [ -n "$LEASE_SECRET" ]; then
+  printf '%s' "$LEASE_SECRET" > /tmp/.lease-secret
+  chmod 600 /tmp/.lease-secret
+  echo "[+] Lease API enabled (LEASE_SECRET set)"
+else
+  rm -f /tmp/.lease-secret
+  echo "[!] LEASE_SECRET not set — /api/v1 lease API DISABLED."
+  echo "    The exam site cannot start labs until you set it in Render."
+fi
 
 # ── Generate per-lab credentials ─────────────────────────────────
 touch "$CREDS_FILE"
@@ -148,8 +168,34 @@ for i in $(seq 1 "$MAX_LABS"); do
 LOCEOF
 done
 
+# The demo walkthrough consumes real lab capacity, so unless PUBLIC_DEMO=true
+# it sits behind the same basic auth as the admin panel. The X-CHX-Admin header
+# is what lab-api trusts, and nginx sets it only on authenticated routes.
+if [ "$(printf '%s' "$PUBLIC_DEMO" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+  DEMO_AUTH='# PUBLIC_DEMO=true — anyone may start the walkthrough'
+  DEMO_ADMIN_FLAG=''
+  echo "[!] PUBLIC_DEMO=true — anonymous visitors can start the demo and use lab capacity"
+else
+  DEMO_AUTH='auth_basic "CyberHX Admin"; auth_basic_user_file /etc/nginx/.htpasswd_admin;'
+  DEMO_ADMIN_FLAG='1'
+  echo "[+] Demo walkthrough requires admin login"
+fi
+
+# X-Frame-Options has no multi-origin form, so it is only emitted when
+# framing stays same-origin. Otherwise CSP frame-ancestors governs alone.
+if [ "$ALLOWED_FRAME_ANCESTORS" = "'self'" ]; then
+  XFO_HEADER='add_header X-Frame-Options "SAMEORIGIN" always;'
+else
+  XFO_HEADER='# X-Frame-Options omitted: CSP frame-ancestors allows extra origins'
+  echo "[+] Terminal embedding allowed from: ${ALLOWED_FRAME_ANCESTORS}"
+fi
+
 sed -e "s|__PORT__|${PORT}|g" \
     -e "s|__INTERNAL_TOKEN__|${INTERNAL_TOKEN}|g" \
+    -e "s|__CSP_FRAME_ANCESTORS__|${ALLOWED_FRAME_ANCESTORS}|g" \
+    -e "s|__XFO_HEADER__|${XFO_HEADER}|g" \
+    -e "s|__DEMO_AUTH__|${DEMO_AUTH}|g" \
+    -e "s|__DEMO_ADMIN_FLAG__|${DEMO_ADMIN_FLAG}|g" \
     /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 sed -i "/# __LOCATIONS__/r ${LOCATIONS_TMP}" /etc/nginx/nginx.conf
