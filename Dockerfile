@@ -25,11 +25,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ( [ -f /usr/share/wordlists/rockyou.txt.gz ] && gunzip -kf /usr/share/wordlists/rockyou.txt.gz || true )
 
 # ── Create lab users (lab1 … lab10) ──────────────────────────────
+# Tool-specific sudo: only nmap, tcpdump need raw sockets.
+# No blanket NOPASSWD:ALL — prevents sandbox escape.
 RUN for i in $(seq 1 10); do \
         useradd -m -s /bin/bash "lab${i}" && \
-        usermod -aG sudo "lab${i}" && \
-        echo "lab${i} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/lab${i}" && \
-        chmod 0440 "/etc/sudoers.d/lab${i}" ; \
+        echo "lab${i} ALL=(ALL) NOPASSWD: /usr/bin/nmap, /usr/sbin/tcpdump" \
+          > "/etc/sudoers.d/lab${i}" && \
+        chmod 0440 "/etc/sudoers.d/lab${i}" && \
+        chmod 700 "/home/lab${i}" ; \
     done
 
 # ── Per-user shell config (prompt, proxy, banner) ────────────────
@@ -46,7 +49,8 @@ COPY filter.txt          /etc/tinyproxy/filter.txt
 COPY landing/            /var/www/landing/
 
 RUN sed -i 's/\r$//' /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh \
-    && chmod +x /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh
+    && chmod +x /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh \
+    && touch /var/log/lab-audit.log && chmod 622 /var/log/lab-audit.log
 
 WORKDIR /home
 

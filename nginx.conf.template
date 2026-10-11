@@ -19,6 +19,10 @@ http {
         ''      close;
     }
 
+    # Rate limiting for auth endpoints (brute-force protection)
+    limit_req_zone $binary_remote_addr zone=auth:1m rate=5r/m;
+    limit_req_zone $binary_remote_addr zone=api:1m rate=30r/m;
+
     server {
         listen __PORT__;
         server_name _;
@@ -39,22 +43,29 @@ http {
             add_header Access-Control-Allow-Origin "*";
         }
 
-        # ── Admin panel (password protected) ─────────────────
+        # ── Admin panel (password protected, rate-limited) ────
         location /admin {
+            limit_req zone=auth burst=3 nodelay;
             auth_basic "CyberHX Admin";
             auth_basic_user_file /etc/nginx/.htpasswd_admin;
             alias /var/www/landing;
             try_files /admin.html =404;
         }
 
-        # Admin credentials API (password protected)
+        # Admin credentials API (password protected, rate-limited)
         location = /api/admin/labs {
+            limit_req zone=auth burst=3 nodelay;
             auth_basic "CyberHX Admin";
             auth_basic_user_file /etc/nginx/.htpasswd_admin;
             alias /var/www/landing/labs-admin.json;
             default_type application/json;
             add_header Cache-Control "no-cache";
         }
+
+        # ── Security headers ──────────────────────────────────
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "no-referrer" always;
 
         # ── Static assets ────────────────────────────────────
         location /assets/ {

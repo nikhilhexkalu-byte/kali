@@ -30,6 +30,9 @@ if [ -z "$ADMIN_PASSWORD" ]; then
 fi
 
 # ── Generate per-lab credentials ─────────────────────────────────
+# Create creds file with restricted permissions (root-only)
+touch "$CREDS_FILE"
+chmod 600 "$CREDS_FILE"
 echo '{"labs":[' > "$CREDS_FILE"
 echo ""
 echo "┌──────┬──────────┬────────────────────────┬──────────────┐"
@@ -124,33 +127,38 @@ sleep 1
 
 # ── Build nginx config from template ────────────────────────────
 echo "[*] Generating nginx config..."
-UPSTREAM_BLOCK=""
-LOCATION_BLOCK=""
+
+# Write location blocks to a temp file (avoids sed multi-line issues)
+LOCATIONS_TMP="/tmp/nginx-locations.conf"
+> "$LOCATIONS_TMP"
 
 for i in $(seq 1 "$MAX_LABS"); do
   INTERNAL_PORT=$((7680 + i))
-
-  LOCATION_BLOCK="${LOCATION_BLOCK}
+  cat >> "$LOCATIONS_TMP" <<LOCEOF
     # Lab ${i}
     location /lab/${i}/ {
         proxy_pass http://127.0.0.1:${INTERNAL_PORT}/lab/${i}/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
     }
-"
+
+LOCEOF
 done
 
-sed \
-  -e "s|__PORT__|${PORT}|g" \
-  -e "s|__ADMIN_PASSWORD__|${ADMIN_PASSWORD}|g" \
-  -e "s|# __LOCATIONS__|${LOCATION_BLOCK}|" \
-  /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+# Simple replacements first, then insert location blocks via sed 'r'
+sed -e "s|__PORT__|${PORT}|g" \
+    /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
+# Replace the marker line with the locations file content
+sed -i "/# __LOCATIONS__/r ${LOCATIONS_TMP}" /etc/nginx/nginx.conf
+sed -i '/# __LOCATIONS__/d' /etc/nginx/nginx.conf
+
+rm -f "$LOCATIONS_TMP"
 echo "[+] Nginx config generated"
 
 # ── Write credentials JSON for landing page ──────────────────────

@@ -9,9 +9,9 @@ SESSION_TIMEOUT="${SESSION_TIMEOUT:-900}"
 SESSION_FILE="/tmp/.lab-session-${LAB_NUM}"
 WARNING_TIME=$((SESSION_TIMEOUT - 60))
 
-# Record session start
+# Record session start (root-only — users can't tamper with timeouts)
 echo "$(date +%s)" > "$SESSION_FILE"
-chmod 666 "$SESSION_FILE" 2>/dev/null || true
+chmod 600 "$SESSION_FILE" 2>/dev/null || true
 
 # Background countdown — warns at T-60s, kills at T-0
 (
@@ -37,12 +37,17 @@ chmod 666 "$SESSION_FILE" 2>/dev/null || true
 
   sleep 5
 
-  # Kill all processes for this user
+  # Kill only this lab user's processes (NOT kill -9 -1 which crashes the container)
   rm -f "$SESSION_FILE"
-  pkill -u "$LAB_USER" 2>/dev/null
-  kill -9 -1 2>/dev/null
+  pkill -9 -u "$LAB_USER" 2>/dev/null || true
 ) &
 TIMER_PID=$!
+
+# Apply resource limits to prevent fork bombs and resource exhaustion
+ulimit -u 50        # max 50 processes per user
+ulimit -f 102400    # max 100MB file size (in 1KB blocks)
+ulimit -n 256       # max 256 open files
+ulimit -v 262144    # max 256MB virtual memory (in KB)
 
 # Run interactive shell as the lab user
 cd "/home/${LAB_USER}"
