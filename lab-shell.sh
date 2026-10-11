@@ -65,11 +65,14 @@ chmod 600 "$SESSION_FILE" 2>/dev/null || true
 ) &
 TIMER_PID=$!
 
-# Run interactive shell as the lab user
+# Run interactive shell as the lab user inside tmux so reconnecting
+# the browser tab reattaches to the same session (command history,
+# running processes, and screen state are preserved).
+TMUX_SESSION="lab${LAB_NUM}"
 cd "/home/${LAB_USER}"
 exec runuser -u "$LAB_USER" -- env \
   HOME="/home/${LAB_USER}" \
   USER="$LAB_USER" \
   LOGNAME="$LAB_USER" \
   SESSION_TIMEOUT="$SESSION_TIMEOUT" \
-  bash --login
+  tmux new-session -A -s "$TMUX_SESSION"
