@@ -47,8 +47,10 @@ COPY nginx.conf.template /etc/nginx/nginx.conf.template
 COPY tinyproxy.conf      /etc/tinyproxy/tinyproxy.conf
 COPY filter.txt          /etc/tinyproxy/filter.txt
 COPY landing/            /var/www/landing/
+COPY challenges/         /opt/challenges/
 
-RUN sed -i 's/\r$//' /start.sh /usr/local/bin/lab-shell.sh /exam-api.py \
+RUN chmod -R 700 /opt/challenges && chmod +x /opt/challenges/*/*.sh \
+    && sed -i 's/\r$//' /start.sh /usr/local/bin/lab-shell.sh /exam-api.py \
     && chmod 700 /start.sh /exam-api.py /usr/local/bin/lab-shell.sh \
     && chmod 600 /etc/nginx/nginx.conf.template \
     && chmod 600 /etc/tinyproxy/tinyproxy.conf /etc/tinyproxy/filter.txt \
