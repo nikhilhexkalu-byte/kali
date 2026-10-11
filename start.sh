@@ -69,6 +69,8 @@ echo ']}' >> "$CREDS_FILE"
 
 # ── Write admin password for nginx auth ──────────────────────────
 echo "admin:$(echo -n "$ADMIN_PASSWORD" | openssl passwd -apr1 -stdin)" > /etc/nginx/.htpasswd_admin
+chown root:www-data /etc/nginx/.htpasswd_admin
+chmod 640 /etc/nginx/.htpasswd_admin
 
 # ── Setup network sandbox (try iptables, fallback to proxy-only) ─
 echo "[*] Setting up network sandbox..."
@@ -115,6 +117,7 @@ fi
 # ── Update tinyproxy filter with allowed domain ──────────────────
 echo "\.${ALLOWED_DOMAIN}$" > /etc/tinyproxy/filter.txt
 echo "[+] Proxy whitelist: *.${ALLOWED_DOMAIN}"
+chmod 600 /etc/tinyproxy/filter.txt
 
 # ── Start tinyproxy ──────────────────────────────────────────────
 echo "[*] Starting tinyproxy (filtering proxy on :8888)..."
@@ -153,7 +156,9 @@ sed -i "/# __LOCATIONS__/r ${LOCATIONS_TMP}" /etc/nginx/nginx.conf
 sed -i '/# __LOCATIONS__/d' /etc/nginx/nginx.conf
 
 rm -f "$LOCATIONS_TMP"
+unset INTERNAL_TOKEN  # no longer needed — baked into nginx.conf, on disk at /tmp/.api-token
 echo "[+] Nginx config generated (${MAX_LABS} terminal locations)"
+chmod 600 /etc/nginx/nginx.conf
 
 # Credentials stay in /tmp only (root-readable, served via exam-api)
 # NOT copied to web root — prevents unauthenticated access
@@ -162,6 +167,11 @@ echo "[+] Nginx config generated (${MAX_LABS} terminal locations)"
 echo "[*] Starting nginx on port ${PORT}..."
 nginx
 sleep 1
+
+# ── Hide process list from lab users ─────────────────────────────
+mount -o remount,hidepid=2 /proc 2>/dev/null && \
+  echo "[+] /proc hidden — lab users cannot see other processes" || \
+  echo "[!] hidepid=2 unavailable — ps aux may expose credentials"
 
 # ── Start exam API server ────────────────────────────────────────
 echo "[*] Starting exam API on :9090..."

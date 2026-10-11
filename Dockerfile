@@ -41,7 +41,6 @@ RUN chmod +x /tmp/setup-bashrc.sh && /tmp/setup-bashrc.sh && rm /tmp/setup-bashr
 
 # ── Copy lab scripts & configs ───────────────────────────────────
 COPY start.sh            /start.sh
-COPY session-manager.sh  /session-manager.sh
 COPY exam-api.py         /exam-api.py
 COPY lab-shell.sh        /usr/local/bin/lab-shell.sh
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
@@ -49,8 +48,10 @@ COPY tinyproxy.conf      /etc/tinyproxy/tinyproxy.conf
 COPY filter.txt          /etc/tinyproxy/filter.txt
 COPY landing/            /var/www/landing/
 
-RUN sed -i 's/\r$//' /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh /exam-api.py \
-    && chmod +x /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh /exam-api.py \
+RUN sed -i 's/\r$//' /start.sh /usr/local/bin/lab-shell.sh /exam-api.py \
+    && chmod 700 /start.sh /exam-api.py /usr/local/bin/lab-shell.sh \
+    && chmod 600 /etc/nginx/nginx.conf.template \
+    && chmod 600 /etc/tinyproxy/tinyproxy.conf /etc/tinyproxy/filter.txt \
     && touch /var/log/lab-audit.log && chmod 622 /var/log/lab-audit.log
 
 WORKDIR /home
