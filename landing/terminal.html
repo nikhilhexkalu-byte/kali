@@ -170,7 +170,7 @@
     <div class="sb-brand">CYBERHX</div>
   </div>
   <div class="term-wrap">
-    <iframe id="term" src="about:blank" allow="clipboard-write" allowfullscreen></iframe>
+    <iframe id="term" src="about:blank" allowfullscreen></iframe>
     <div class="term-error" id="termErr">
       <div class="err-code">--</div>
       <div>Lab terminal not available</div>
@@ -186,6 +186,41 @@
   } else {
     document.getElementById('termErr').classList.add('show');
   }
+
+  // ── Block copy/paste from external environment ──────────────
+  function blockClipboard(e) { e.preventDefault(); e.stopPropagation(); }
+  function blockKeys(e) {
+    // Block Ctrl+V, Ctrl+Shift+V (paste), Ctrl+Shift+C (copy from terminal)
+    if (e.ctrlKey && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); e.stopPropagation(); }
+    if (e.ctrlKey && e.shiftKey && (e.key === 'c' || e.key === 'C' || e.key === 'v' || e.key === 'V')) { e.preventDefault(); e.stopPropagation(); }
+  }
+
+  // Block on the wrapper page itself
+  document.addEventListener('paste', blockClipboard, true);
+  document.addEventListener('copy', blockClipboard, true);
+  document.addEventListener('keydown', blockKeys, true);
+  document.addEventListener('contextmenu', blockClipboard, true);
+
+  // Block inside the terminal iframe (same-origin)
+  var termFrame = document.getElementById('term');
+  termFrame.addEventListener('load', function() {
+    try {
+      var iDoc = termFrame.contentDocument || termFrame.contentWindow.document;
+      iDoc.addEventListener('paste', blockClipboard, true);
+      iDoc.addEventListener('copy', blockClipboard, true);
+      iDoc.addEventListener('keydown', blockKeys, true);
+      iDoc.addEventListener('contextmenu', blockClipboard, true);
+
+      // Also block clipboard API
+      if (termFrame.contentWindow.navigator && termFrame.contentWindow.navigator.clipboard) {
+        Object.defineProperty(termFrame.contentWindow.navigator, 'clipboard', {
+          get: function() { return { writeText: function(){return Promise.reject()}, readText: function(){return Promise.reject()}, write: function(){return Promise.reject()}, read: function(){return Promise.reject()} }; }
+        });
+      }
+    } catch(ex) {
+      // Cross-origin — iframe sandbox already blocks clipboard
+    }
+  });
 })();
 </script>
 </body>
