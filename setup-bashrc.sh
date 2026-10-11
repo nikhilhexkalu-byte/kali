@@ -12,10 +12,10 @@ alias ip='ip --color=auto'
 alias diff='diff --color=auto'
 
 # ── Audit logging (uses bash builtins only — no forks) ──────
-export PROMPT_COMMAND='printf "%(%Y-%m-%d %H:%M:%S)T [%s] %s\n" -1 "$USER" "$(history 1)" >> /var/log/lab-audit.log 2>/dev/null'
+export PROMPT_COMMAND='history -a; printf "%(%Y-%m-%d %H:%M:%S)T [%s] %s\n" -1 "$USER" "$(history 1)" >> /var/log/lab-audit.log 2>/dev/null'
 export HISTTIMEFORMAT="%F %T  "
 export HISTSIZE=1000
-export HISTFILESIZE=0
+export HISTFILESIZE=1000
 shopt -s histappend 2>/dev/null
 
 # Sandbox proxy – only *.cyberhx.com reachable
