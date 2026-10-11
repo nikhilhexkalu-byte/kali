@@ -10,8 +10,13 @@ LAB_USER="lab${LAB_NUM}"
 HOME_DIR="/home/${LAB_USER}"
 CLEAN_BASHRC="/etc/cyberhx/clean-bashrc"
 
-# ── Kill all processes owned by the lab user ──────────────────────
+# ── Kill all processes owned by the lab user (ensure fully dead) ──
+pkill -STOP -u "$LAB_USER" 2>/dev/null || true
 pkill -9 -u "$LAB_USER" 2>/dev/null || true
+while pgrep -u "$LAB_USER" >/dev/null 2>&1; do
+  pkill -9 -u "$LAB_USER" 2>/dev/null || true
+  sleep 0.2
+done
 
 # ── Kill tmux sessions for this slot ─────────────────────────────
 tmux kill-session -t "lab${LAB_NUM}" 2>/dev/null || true
@@ -19,18 +24,19 @@ tmux kill-session -t "lab${LAB_NUM}" 2>/dev/null || true
 # ── Kill the per-slot web service user ────────────────────────────
 pkill -9 -u "www-chx${LAB_NUM}" 2>/dev/null || true
 
-# ── Wipe the home directory completely and restore clean state ────
-rm -rf "${HOME_DIR:?}"/.[!.]* "${HOME_DIR:?}"/..?* "${HOME_DIR:?}"/* 2>/dev/null || true
+# ── Wipe and atomically recreate the home directory ───────────────
+# Removes the entire directory (no symlink following) then recreates
+# it with correct ownership. Files are written as the lab user to
+# prevent symlink-following attacks.
+rm -rf "${HOME_DIR:?}"
+install -d -o "${LAB_USER}" -g "${LAB_USER}" -m 700 "${HOME_DIR}"
 
 if [ -f "$CLEAN_BASHRC" ]; then
-  cp "$CLEAN_BASHRC" "${HOME_DIR}/.bashrc"
+  runuser -u "${LAB_USER}" -- install -m 644 /dev/stdin "${HOME_DIR}/.bashrc" < "$CLEAN_BASHRC"
 else
-  cp /etc/skel/.bashrc "${HOME_DIR}/.bashrc" 2>/dev/null || true
+  runuser -u "${LAB_USER}" -- install -m 644 /dev/stdin "${HOME_DIR}/.bashrc" < /etc/skel/.bashrc
 fi
-cp /etc/skel/.profile "${HOME_DIR}/.profile" 2>/dev/null || true
-
-chown "${LAB_USER}:${LAB_USER}" "${HOME_DIR}/.bashrc" "${HOME_DIR}/.profile" 2>/dev/null || true
-chmod 700 "$HOME_DIR"
+runuser -u "${LAB_USER}" -- install -m 644 /dev/stdin "${HOME_DIR}/.profile" < /etc/skel/.profile
 
 # ── Clean /tmp files owned by the lab user ────────────────────────
 find /tmp -maxdepth 2 -user "$LAB_USER" -exec rm -rf {} + 2>/dev/null || true
