@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CyberHX Admin — Lab Credentials</title>
+<title>CyberHX Admin — Exam Control</title>
 <style>
   :root {
     --bg: #0a0e17;
@@ -35,6 +35,109 @@
     -webkit-text-fill-color: transparent;
   }
   .subtitle { color: var(--text-dim); margin-bottom: 32px; }
+
+  /* ── Exam Control Panel ──────────────────────────────── */
+  .exam-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+  .exam-panel h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+  .exam-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .exam-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .exam-badge.idle {
+    background: rgba(100,116,139,0.15);
+    color: var(--text-dim);
+    border: 1px solid rgba(100,116,139,0.3);
+  }
+  .exam-badge.running {
+    background: rgba(6,182,212,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(6,182,212,0.3);
+  }
+  .exam-badge.completed {
+    background: rgba(34,197,94,0.12);
+    color: var(--green);
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+  .exam-info {
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  .exam-info strong { color: var(--text); }
+  .exam-timer {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+  }
+
+  .exam-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .btn {
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    background: var(--bg-card);
+    color: var(--text);
+  }
+  .btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn.danger {
+    border-color: rgba(239,68,68,0.4);
+    color: var(--red);
+  }
+  .btn.danger:hover {
+    border-color: var(--red);
+    background: rgba(239,68,68,0.1);
+  }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent), #0891b2);
+    color: #fff;
+    border: none;
+  }
+  .btn.primary:hover { filter: brightness(1.15); }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: none;
+  }
+
+  /* ── Credentials Table ───────────────────────────────── */
+  .section-title {
+    font-size: 18px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
 
   table {
     width: 100%;
@@ -78,14 +181,8 @@
     font-size: 12px;
     transition: all 0.2s;
   }
-  .copy-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-  .copy-btn.copied {
-    border-color: var(--green);
-    color: var(--green);
-  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--green); color: var(--green); }
 
   .status-dot {
     display: inline-block;
@@ -102,35 +199,41 @@
     display: flex;
     gap: 12px;
   }
-  .action-btn {
-    padding: 10px 20px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    transition: all 0.2s;
-  }
-  .action-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>🔐 Admin Panel</h1>
-  <p class="subtitle">Lab credentials — share these with your students</p>
+  <h1>&#x1f510; Admin Panel</h1>
+  <p class="subtitle">Exam control &amp; lab credentials</p>
 
+  <!-- ── Exam Control ─────────────────────────────────── -->
+  <div class="exam-panel">
+    <h2>Exam Control</h2>
+    <div class="exam-row">
+      <span>Status:</span>
+      <span class="exam-badge idle" id="examBadge">IDLE</span>
+      <span class="exam-info" id="examStage"></span>
+    </div>
+    <div class="exam-row" id="examTimerRow" style="display:none">
+      <span>Time Remaining:</span>
+      <span class="exam-timer" id="examTimer">--:--</span>
+    </div>
+    <div class="exam-actions">
+      <button class="btn primary" id="btnStart" onclick="adminStartExam()">Start Exam</button>
+      <button class="btn danger" id="btnReset" onclick="adminResetExam()">Reset Exam</button>
+    </div>
+  </div>
+
+  <!-- ── Credentials ──────────────────────────────────── -->
+  <h2 class="section-title">Lab Credentials</h2>
   <table>
     <thead>
       <tr>
         <th>Lab</th>
+        <th>Stage</th>
         <th>Username</th>
         <th>Password</th>
         <th>URL Path</th>
-        <th>Status</th>
       </tr>
     </thead>
     <tbody id="credTable">
@@ -139,18 +242,42 @@
   </table>
 
   <div class="bulk-actions">
-    <button class="action-btn" onclick="copyAll()">📋 Copy All Credentials</button>
-    <button class="action-btn" onclick="downloadCSV()">⬇ Download CSV</button>
+    <button class="btn" onclick="copyAll()">&#x1f4cb; Copy All Credentials</button>
   </div>
 </div>
 
 <script>
   let labData = [];
+  let examSyncRemaining = 0;
+  let examLastSync = 0;
 
+  const stageMap = {1: [1,2], 2: [3,4], 3: [5,6]};
+  const stageNames = {1: 'Reconnaissance', 2: 'Exploitation', 3: 'Post-Exploitation'};
+
+  function labStage(labId) {
+    for (var s in stageMap) {
+      if (stageMap[s].indexOf(labId) !== -1) return parseInt(s);
+    }
+    return 0;
+  }
+
+  function fmtTime(s) {
+    var m = Math.floor(s / 60);
+    var sec = Math.floor(s % 60);
+    return m + ':' + String(sec).padStart(2, '0');
+  }
+
+  function getRemaining() {
+    if (examSyncRemaining <= 0) return 0;
+    var elapsed = (Date.now() / 1000) - examLastSync;
+    return Math.max(0, Math.round(examSyncRemaining - elapsed));
+  }
+
+  // ── Load credentials ──────────────────────────────────
   async function loadCreds() {
     try {
-      const res = await fetch('/api/admin/labs');
-      const data = await res.json();
+      var res = await fetch('/api/admin/labs');
+      var data = await res.json();
       labData = data.labs;
       renderTable(data.labs);
     } catch (e) {
@@ -160,60 +287,118 @@
   }
 
   function renderTable(labs) {
-    const tbody = document.getElementById('credTable');
-    tbody.innerHTML = labs.map(lab => `
-      <tr>
-        <td><strong>#${lab.id}</strong></td>
-        <td class="mono">${lab.user}</td>
-        <td>
-          <div class="pw-cell">
-            <span class="mono">${lab.password}</span>
-            <button class="copy-btn" onclick="copyPw(this, '${lab.password}')">Copy</button>
-          </div>
-        </td>
-        <td class="mono">${lab.path}</td>
-        <td>
-          <span class="status-dot ${lab.active ? 'active' : 'available'}"></span>
-          ${lab.active ? 'In Use' : 'Available'}
-        </td>
-      </tr>
-    `).join('');
+    var tbody = document.getElementById('credTable');
+    tbody.innerHTML = labs.map(function(lab) {
+      var s = labStage(lab.id);
+      return '<tr>' +
+        '<td><strong>#' + lab.id + '</strong></td>' +
+        '<td>Stage ' + s + '</td>' +
+        '<td class="mono">' + lab.user + '</td>' +
+        '<td><div class="pw-cell">' +
+          '<span class="mono">' + lab.password + '</span>' +
+          '<button class="copy-btn" onclick="copyPw(this,\'' + lab.password + '\')">Copy</button>' +
+        '</div></td>' +
+        '<td class="mono">' + lab.path + '</td>' +
+      '</tr>';
+    }).join('');
   }
 
+  // ── Exam status polling ────────────────────────────────
+  async function pollExam() {
+    try {
+      var res = await fetch('/api/exam/status');
+      var data = await res.json();
+      examSyncRemaining = data.time_remaining || 0;
+      examLastSync = Date.now() / 1000;
+      renderExamStatus(data);
+    } catch (e) {}
+  }
+
+  function renderExamStatus(data) {
+    var badge = document.getElementById('examBadge');
+    var stage = document.getElementById('examStage');
+    var timerRow = document.getElementById('examTimerRow');
+    var btnStart = document.getElementById('btnStart');
+
+    badge.className = 'exam-badge ' + data.status;
+    badge.textContent = data.status.toUpperCase();
+
+    if (data.status === 'running') {
+      stage.innerHTML = '<strong>Stage ' + data.current_stage + '</strong> — ' + (data.stage_name || '');
+      timerRow.style.display = '';
+      btnStart.disabled = true;
+    } else if (data.status === 'completed') {
+      stage.textContent = 'All stages completed';
+      timerRow.style.display = 'none';
+      btnStart.disabled = true;
+    } else {
+      stage.textContent = 'Ready to start';
+      timerRow.style.display = 'none';
+      btnStart.disabled = false;
+    }
+  }
+
+  function tickExamTimer() {
+    var el = document.getElementById('examTimer');
+    el.textContent = fmtTime(getRemaining());
+  }
+
+  // ── Admin actions ──────────────────────────────────────
+  async function adminStartExam() {
+    var btn = document.getElementById('btnStart');
+    btn.disabled = true;
+    btn.textContent = 'Starting...';
+    try {
+      var res = await fetch('/api/exam/start', {method: 'POST'});
+      var data = await res.json();
+      if (data.error) alert(data.error);
+      btn.textContent = 'Start Exam';
+      pollExam();
+    } catch (e) {
+      alert('Failed to start exam');
+      btn.disabled = false;
+      btn.textContent = 'Start Exam';
+    }
+  }
+
+  async function adminResetExam() {
+    if (!confirm('Reset exam? This will kill all active lab sessions.')) return;
+    try {
+      var res = await fetch('/api/exam/reset', {method: 'POST'});
+      var data = await res.json();
+      if (data.ok) pollExam();
+      else alert('Reset failed');
+    } catch (e) {
+      alert('Failed to reset exam');
+    }
+  }
+
+  // ── Copy helpers ───────────────────────────────────────
   function copyPw(btn, pw) {
     navigator.clipboard.writeText(pw);
     btn.textContent = 'Copied!';
     btn.classList.add('copied');
-    setTimeout(() => {
+    setTimeout(function() {
       btn.textContent = 'Copy';
       btn.classList.remove('copied');
     }, 1500);
   }
 
   function copyAll() {
-    const host = window.location.origin;
-    const text = labData.map(l =>
-      `Lab ${l.id}: User=${l.user}  Password=${l.password}  URL=${host}${l.path}`
-    ).join('\n');
+    var host = window.location.origin;
+    var text = labData.map(function(l) {
+      return 'Lab ' + l.id + ' (Stage ' + labStage(l.id) + '): User=' + l.user +
+        '  Password=' + l.password + '  URL=' + host + l.path;
+    }).join('\n');
     navigator.clipboard.writeText(text);
     alert('All credentials copied to clipboard!');
   }
 
-  function downloadCSV() {
-    const host = window.location.origin;
-    let csv = 'Lab,Username,Password,URL\n';
-    csv += labData.map(l =>
-      `${l.id},${l.user},${l.password},${host}${l.path}`
-    ).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'cyberhx-lab-credentials.csv';
-    a.click();
-  }
-
+  // ── Boot ───────────────────────────────────────────────
   loadCreds();
-  setInterval(loadCreds, 15000);
+  pollExam();
+  setInterval(pollExam, 3000);
+  setInterval(tickExamTimer, 1000);
 </script>
 </body>
 </html>

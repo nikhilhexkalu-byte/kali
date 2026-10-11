@@ -35,6 +35,27 @@ http {
             try_files /index.html =404;
         }
 
+        # ── Exam API (public) ────────────────────────────────
+        location = /api/exam/status {
+            proxy_pass http://127.0.0.1:9090;
+            proxy_http_version 1.1;
+        }
+
+        location = /api/exam/start {
+            limit_req zone=api burst=2 nodelay;
+            proxy_pass http://127.0.0.1:9090;
+            proxy_http_version 1.1;
+        }
+
+        # ── Exam API (admin-only) ────────────────────────────
+        location = /api/exam/reset {
+            limit_req zone=auth burst=3 nodelay;
+            auth_basic "CyberHX Admin";
+            auth_basic_user_file /etc/nginx/.htpasswd_admin;
+            proxy_pass http://127.0.0.1:9090;
+            proxy_http_version 1.1;
+        }
+
         # Public lab status API (no passwords)
         location = /api/labs {
             alias /var/www/landing/labs-public.json;

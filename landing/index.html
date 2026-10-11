@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CyberHX — Pentest Lab</title>
+<title>CyberHX — Pentest Exam</title>
 <style>
   :root {
     --bg: #0a0e17;
@@ -30,7 +30,7 @@
     overflow-x: hidden;
   }
 
-  /* Animated grid background */
+  /* Grid background */
   body::before {
     content: '';
     position: fixed;
@@ -46,236 +46,382 @@
   .container {
     position: relative;
     z-index: 1;
-    max-width: 1100px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 40px 20px;
   }
 
-  /* Header */
+  /* ── Header ─────────────────────────────────────────── */
   .header {
     text-align: center;
-    margin-bottom: 48px;
+    margin-bottom: 40px;
   }
-
   .logo {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     letter-spacing: 6px;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
-
   .header h1 {
-    font-size: 42px;
+    font-size: 38px;
     font-weight: 800;
-    letter-spacing: -1px;
+    letter-spacing: -0.5px;
     background: linear-gradient(135deg, #e2e8f0 0%, #06b6d4 50%, #22c55e 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
-
   .header p {
     color: var(--text-dim);
-    font-size: 16px;
-    max-width: 500px;
-    margin: 0 auto;
+    font-size: 15px;
     line-height: 1.6;
   }
 
-  /* Stats bar */
-  .stats {
-    display: flex;
-    justify-content: center;
-    gap: 32px;
-    margin-bottom: 40px;
-    flex-wrap: wrap;
+  /* ── View containers ────────────────────────────────── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── IDLE VIEW ──────────────────────────────────────── */
+  .exam-overview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 550px) {
+    .exam-overview { grid-template-columns: 1fr; }
   }
 
-  .stat {
-    text-align: center;
-    padding: 16px 24px;
+  .stage-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .stage-card:hover {
+    border-color: rgba(6,182,212,0.4);
+  }
+  .stage-card .stage-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(6,182,212,0.12);
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  .stage-card .stage-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .stage-card .stage-meta {
+    font-size: 12px;
+    color: var(--text-dim);
   }
 
-  .stat-value {
-    font-size: 28px;
+  .exam-stats {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .exam-stat {
+    text-align: center;
+  }
+  .exam-stat .val {
+    font-size: 24px;
     font-weight: 700;
     color: var(--accent);
+    font-variant-numeric: tabular-nums;
   }
-
-  .stat-label {
-    font-size: 12px;
+  .exam-stat .lbl {
+    font-size: 11px;
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
-  /* Lab grid */
-  .labs {
+  .sandbox-notice {
+    background: rgba(6,182,212,0.05);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .sandbox-notice strong { color: var(--text); }
+
+  .start-btn {
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto 24px;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .start-btn:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 6px 24px rgba(6,182,212,0.35);
+    transform: translateY(-1px);
+  }
+  .start-btn:disabled {
+    background: var(--border);
+    color: var(--text-dim);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    filter: none;
+  }
+  .start-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .error-msg {
+    text-align: center;
+    color: var(--red);
+    font-size: 14px;
+    margin-top: -16px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  /* ── RUNNING VIEW ───────────────────────────────────── */
+  /* Stage progress bar */
+  .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 24px;
+  }
+  .dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    color: var(--text-dim);
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  .dot.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(6,182,212,0.12);
+    box-shadow: 0 0 16px rgba(6,182,212,0.3);
+    animation: dotPulse 2s infinite;
+  }
+  .dot.done {
+    border-color: var(--green);
+    color: #fff;
+    background: var(--green);
+  }
+  @keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(6,182,212,0.3); }
+    50% { box-shadow: 0 0 24px rgba(6,182,212,0.5); }
+  }
+
+  .line {
+    width: 60px;
+    height: 2px;
+    background: var(--border);
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .line.done {
+    background: var(--green);
+  }
+
+  .stage-label {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .timer {
+    text-align: center;
+    font-size: 64px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    margin-bottom: 28px;
+    letter-spacing: 2px;
+    transition: color 0.3s;
+    font-family: 'Inter', -apple-system, sans-serif;
+  }
+  .timer.warning { color: var(--orange); }
+  .timer.critical { color: var(--red); }
+
+  .lab-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 500px) {
+    .lab-cards { grid-template-columns: 1fr; }
   }
 
   .lab-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 24px;
-    transition: all 0.2s ease;
-    cursor: default;
+    padding: 20px;
+    transition: border-color 0.2s;
   }
-
   .lab-card:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--accent);
-    box-shadow: 0 0 20px var(--accent-glow);
-    transform: translateY(-2px);
+    border-color: rgba(6,182,212,0.4);
   }
-
-  .lab-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  .lab-number {
-    font-size: 22px;
+  .lab-card .lab-header {
+    font-size: 18px;
     font-weight: 700;
     color: var(--accent);
+    margin-bottom: 14px;
   }
-
-  .lab-status {
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .lab-status.available {
-    background: rgba(34,197,94,0.1);
-    color: var(--green);
-    border: 1px solid rgba(34,197,94,0.3);
-  }
-
-  .lab-status.active {
-    background: rgba(245,158,11,0.1);
-    color: var(--orange);
-    border: 1px solid rgba(245,158,11,0.3);
-  }
-
-  .lab-info {
+  .lab-cred {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 8px;
-    margin-bottom: 20px;
-  }
-
-  .lab-info-row {
-    display: flex;
-    justify-content: space-between;
+    margin-bottom: 8px;
     font-size: 13px;
   }
-
-  .lab-info-label { color: var(--text-dim); }
-  .lab-info-value { color: var(--text); font-family: 'JetBrains Mono', monospace; }
-
-  .lab-timer {
-    font-size: 12px;
-    color: var(--orange);
-    text-align: center;
-    padding: 6px;
-    background: rgba(245,158,11,0.05);
-    border-radius: 6px;
-    display: none;
+  .lab-cred .label {
+    color: var(--text-dim);
+    min-width: 38px;
   }
-
-  .lab-btn {
+  .lab-cred .value {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: var(--text);
+    flex: 1;
+    word-break: break-all;
+  }
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 2px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .copy-btn.ok {
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .enter-btn {
     display: block;
     width: 100%;
-    padding: 12px;
+    margin-top: 14px;
+    padding: 10px;
     background: linear-gradient(135deg, var(--accent), #0891b2);
     color: #fff;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
     text-align: center;
-    transition: all 0.2s;
+    transition: filter 0.2s;
   }
-
-  .lab-btn:hover {
+  .enter-btn:hover {
     filter: brightness(1.15);
-    box-shadow: 0 4px 15px rgba(6,182,212,0.3);
   }
 
-  .lab-btn.disabled {
-    background: var(--border);
+  .advance-notice {
+    text-align: center;
+    font-size: 12px;
     color: var(--text-dim);
-    cursor: not-allowed;
-    pointer-events: none;
+    margin-bottom: 16px;
   }
 
-  /* Footer */
+  /* ── COMPLETED VIEW ─────────────────────────────────── */
+  .complete-box {
+    text-align: center;
+    padding: 48px 24px;
+  }
+  .complete-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+  }
+  .complete-box h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .complete-box p {
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .complete-stages {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 24px;
+  }
+  .complete-stage {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--green);
+  }
+
+  /* ── Footer ─────────────────────────────────────────── */
   .footer {
     text-align: center;
     padding: 24px 0;
     border-top: 1px solid var(--border);
     color: var(--text-dim);
-    font-size: 13px;
+    font-size: 12px;
+    margin-top: 32px;
   }
-
   .footer a { color: var(--accent); text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
-
-  /* Sandbox notice */
-  .sandbox-notice {
-    background: rgba(6,182,212,0.05);
-    border: 1px solid rgba(6,182,212,0.2);
-    border-radius: var(--radius);
-    padding: 16px 24px;
-    margin-bottom: 32px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-  }
-
-  .sandbox-notice .icon { font-size: 20px; }
-
-  /* Pulse animation for active labs */
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-  .lab-status.active::before {
-    content: '';
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--orange);
-    border-radius: 50%;
-    margin-right: 6px;
-    animation: pulse 1.5s infinite;
-  }
-
-  @media (max-width: 600px) {
-    .header h1 { font-size: 28px; }
-    .stats { gap: 12px; }
-    .labs { grid-template-columns: 1fr; }
-  }
 </style>
 </head>
 <body>
@@ -283,36 +429,68 @@
 
   <div class="header">
     <div class="logo">CyberHX</div>
-    <h1>Pentest Lab</h1>
-    <p>Sandboxed Kali Linux terminals for hands-on security training. Each session runs for 15 minutes in an isolated environment.</p>
+    <h1>Pentest Exam</h1>
+    <p id="headerSub">Sandboxed Kali Linux terminals &middot; 3 stages &middot; 45 minutes total</p>
   </div>
 
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-value" id="totalLabs">—</div>
-      <div class="stat-label">Total Labs</div>
+  <!-- ═══ IDLE VIEW ══════════════════════════════════════ -->
+  <div class="view active" id="view-idle">
+    <div class="exam-overview" id="stageOverview"></div>
+
+    <div class="exam-stats">
+      <div class="exam-stat">
+        <div class="val">3</div>
+        <div class="lbl">Stages</div>
+      </div>
+      <div class="exam-stat">
+        <div class="val">6</div>
+        <div class="lbl">Labs</div>
+      </div>
+      <div class="exam-stat">
+        <div class="val" id="statTime">15m</div>
+        <div class="lbl">Per Stage</div>
+      </div>
+      <div class="exam-stat">
+        <div class="val" id="statTotal">45m</div>
+        <div class="lbl">Total</div>
+      </div>
     </div>
-    <div class="stat">
-      <div class="stat-value" id="availableLabs">—</div>
-      <div class="stat-label">Available</div>
+
+    <div class="sandbox-notice">
+      <span style="font-size:18px">&#x1f512;</span>
+      <span><strong>Sandbox</strong> &mdash; Network restricted to <code>*.cyberhx.com</code>. All other domains are blocked.</span>
     </div>
-    <div class="stat">
-      <div class="stat-value" id="activeLabs">—</div>
-      <div class="stat-label">In Use</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">15m</div>
-      <div class="stat-label">Session Time</div>
-    </div>
+
+    <button class="start-btn" id="startBtn" onclick="startExam()">Enter Exam</button>
+    <div class="error-msg" id="errorMsg"></div>
   </div>
 
-  <div class="sandbox-notice">
-    <span class="icon">🔒</span>
-    <span><strong>Sandbox Mode</strong> — Network access is restricted to <code>*.cyberhx.com</code> only. All other domains are blocked.</span>
+  <!-- ═══ RUNNING VIEW ═══════════════════════════════════ -->
+  <div class="view" id="view-running">
+    <div class="progress-bar">
+      <div class="dot" id="dot-1">1</div>
+      <div class="line" id="line-1"></div>
+      <div class="dot" id="dot-2">2</div>
+      <div class="line" id="line-2"></div>
+      <div class="dot" id="dot-3">3</div>
+    </div>
+
+    <div class="stage-label" id="stageLabel">Stage 1 &middot; Reconnaissance</div>
+    <div class="timer" id="timer">15:00</div>
+
+    <div class="lab-cards" id="labCards"></div>
+
+    <div class="advance-notice">Labs auto-close when the timer expires. Next stage starts automatically.</div>
   </div>
 
-  <div class="labs" id="labGrid">
-    <!-- Populated by JS -->
+  <!-- ═══ COMPLETED VIEW ═════════════════════════════════ -->
+  <div class="view" id="view-completed">
+    <div class="complete-box">
+      <div class="complete-icon">&#x2705;</div>
+      <h2>Exam Complete</h2>
+      <p>All 3 stages have been completed. Your session data has been recorded. Contact your administrator for results.</p>
+      <div class="complete-stages" id="completeStages"></div>
+    </div>
   </div>
 
   <div class="footer">
@@ -322,62 +500,196 @@
 </div>
 
 <script>
-  async function loadLabs() {
+(function() {
+  // ── State ──────────────────────────────────────────────
+  let syncedRemaining = 0;
+  let lastSyncTime = 0;
+  let currentView = 'idle';
+  let stagesData = [];
+
+  // ── Timer sync ─────────────────────────────────────────
+  function getRemaining() {
+    if (syncedRemaining <= 0) return 0;
+    const elapsed = (Date.now() / 1000) - lastSyncTime;
+    return Math.max(0, Math.round(syncedRemaining - elapsed));
+  }
+
+  function fmtTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return m + ':' + String(sec).padStart(2, '0');
+  }
+
+  // ── API calls ──────────────────────────────────────────
+  async function poll() {
     try {
-      const res = await fetch('/api/labs');
+      const res = await fetch('/api/exam/status');
       const data = await res.json();
-      renderLabs(data.labs);
+      syncedRemaining = data.time_remaining || 0;
+      lastSyncTime = Date.now() / 1000;
+      stagesData = data.stages || [];
+      render(data);
     } catch (e) {
-      document.getElementById('labGrid').innerHTML =
-        '<p style="color:var(--text-dim);text-align:center;grid-column:1/-1">Loading labs...</p>';
+      // silent retry
     }
   }
 
-  function formatTime(seconds) {
-    if (!seconds || seconds <= 0) return '0:00';
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${String(s).padStart(2, '0')}`;
+  window.startExam = async function() {
+    var btn = document.getElementById('startBtn');
+    var errEl = document.getElementById('errorMsg');
+    btn.disabled = true;
+    btn.textContent = 'Starting...';
+    errEl.style.display = 'none';
+    try {
+      var res = await fetch('/api/exam/start', { method: 'POST' });
+      var data = await res.json();
+      if (data.error) {
+        errEl.textContent = data.error;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Enter Exam';
+      } else {
+        poll();
+      }
+    } catch (e) {
+      errEl.textContent = 'Failed to connect. Try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Enter Exam';
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────
+  function setView(name) {
+    if (currentView === name) return;
+    currentView = name;
+    document.querySelectorAll('.view').forEach(function(el) {
+      el.classList.remove('active');
+    });
+    var target = document.getElementById('view-' + name);
+    if (target) target.classList.add('active');
   }
 
-  function renderLabs(labs) {
-    const grid = document.getElementById('labGrid');
-    let totalCount = labs.length;
-    let activeCount = labs.filter(l => l.active).length;
-    let availCount = totalCount - activeCount;
-
-    document.getElementById('totalLabs').textContent = totalCount;
-    document.getElementById('availableLabs').textContent = availCount;
-    document.getElementById('activeLabs').textContent = activeCount;
-
-    grid.innerHTML = labs.map(lab => `
-      <div class="lab-card">
-        <div class="lab-top">
-          <span class="lab-number">Lab #${lab.id}</span>
-          <span class="lab-status ${lab.active ? 'active' : 'available'}">
-            ${lab.active ? 'In Use' : 'Available'}
-          </span>
-        </div>
-        <div class="lab-info">
-          <div class="lab-info-row">
-            <span class="lab-info-label">User</span>
-            <span class="lab-info-value">${lab.user}</span>
-          </div>
-          <div class="lab-info-row">
-            <span class="lab-info-label">Path</span>
-            <span class="lab-info-value">${lab.path}</span>
-          </div>
-        </div>
-        ${lab.active && lab.timeLeft !== undefined
-          ? `<div class="lab-timer" style="display:block">⏱ ${formatTime(lab.timeLeft)} remaining</div>`
-          : `<a href="${lab.path}" class="lab-btn" target="_blank">Enter Lab</a>`
-        }
-      </div>
-    `).join('');
+  function render(data) {
+    // Switch view
+    if (data.status === 'idle') {
+      setView('idle');
+      renderIdleOverview(data);
+      // Reset start button
+      var btn = document.getElementById('startBtn');
+      btn.disabled = false;
+      btn.textContent = 'Enter Exam';
+    } else if (data.status === 'running') {
+      setView('running');
+      renderRunning(data);
+    } else if (data.status === 'completed') {
+      setView('completed');
+      renderCompleted(data);
+    }
   }
 
-  loadLabs();
-  setInterval(loadLabs, 15000);
+  function renderIdleOverview(data) {
+    var stages = data.stages || [];
+    var overview = document.getElementById('stageOverview');
+    var timeout = data.session_timeout || 900;
+    document.getElementById('statTime').textContent = Math.floor(timeout / 60) + 'm';
+    document.getElementById('statTotal').textContent = Math.floor((timeout * stages.length) / 60) + 'm';
+
+    overview.innerHTML = stages.map(function(s) {
+      return '<div class="stage-card">' +
+        '<div class="stage-num">' + s.id + '</div>' +
+        '<div class="stage-title">' + s.name + '</div>' +
+        '<div class="stage-meta">Labs ' + s.labs.join(' &amp; ') + ' &middot; ' + Math.floor(timeout / 60) + ' min</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderRunning(data) {
+    var cur = data.current_stage;
+    var completed = data.completed || [];
+
+    // Progress dots
+    for (var i = 1; i <= 3; i++) {
+      var dot = document.getElementById('dot-' + i);
+      dot.className = 'dot';
+      if (completed.indexOf(i) !== -1) {
+        dot.classList.add('done');
+        dot.innerHTML = '&#x2713;';
+      } else if (i === cur) {
+        dot.classList.add('active');
+        dot.textContent = i;
+      } else {
+        dot.textContent = i;
+      }
+    }
+    // Lines
+    for (var j = 1; j <= 2; j++) {
+      var line = document.getElementById('line-' + j);
+      line.className = 'line';
+      if (completed.indexOf(j) !== -1) line.classList.add('done');
+    }
+
+    // Stage label
+    document.getElementById('stageLabel').innerHTML =
+      'Stage ' + cur + ' &middot; ' + (data.stage_name || '');
+
+    // Lab cards
+    var labs = data.active_labs || [];
+    document.getElementById('labCards').innerHTML = labs.map(function(lab) {
+      return '<div class="lab-card">' +
+        '<div class="lab-header">Lab #' + lab.id + '</div>' +
+        '<div class="lab-cred">' +
+          '<span class="label">User</span>' +
+          '<span class="value">' + lab.user + '</span>' +
+        '</div>' +
+        '<div class="lab-cred">' +
+          '<span class="label">Pass</span>' +
+          '<span class="value">' + lab.password + '</span>' +
+          '<button class="copy-btn" onclick="copyPw(this,\'' + lab.password + '\')">Copy</button>' +
+        '</div>' +
+        '<a href="' + lab.path + '" class="enter-btn" target="_blank">Open Terminal &#x2197;</a>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderCompleted(data) {
+    var stages = data.stages || stagesData;
+    document.getElementById('completeStages').innerHTML = stages.map(function(s) {
+      return '<div class="complete-stage">&#x2713; ' + s.name + '</div>';
+    }).join('');
+  }
+
+  // ── Timer tick ─────────────────────────────────────────
+  function tickTimer() {
+    if (currentView !== 'running') return;
+    var rem = getRemaining();
+    var el = document.getElementById('timer');
+    el.textContent = fmtTime(rem);
+    el.className = 'timer';
+    if (rem <= 30) el.classList.add('critical');
+    else if (rem <= 60) el.classList.add('warning');
+  }
+
+  // ── Copy helper ────────────────────────────────────────
+  window.copyPw = function(btn, text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = '✓';
+        btn.classList.add('ok');
+        setTimeout(function() {
+          btn.textContent = 'Copy';
+          btn.classList.remove('ok');
+        }, 1500);
+      }).catch(function() {});
+    }
+  };
+
+  // ── Boot ───────────────────────────────────────────────
+  poll();
+  setInterval(poll, 2000);
+  setInterval(tickTimer, 500);
+
+})();
 </script>
 </body>
 </html>

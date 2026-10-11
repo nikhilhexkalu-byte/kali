@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TERM=xterm-256color \
     LANG=C.UTF-8 \
     TZ=Asia/Kolkata \
-    MAX_LABS=2 \
+    MAX_LABS=6 \
     SESSION_TIMEOUT=900 \
     ALLOWED_DOMAIN=cyberhx.com
 
@@ -42,14 +42,15 @@ RUN chmod +x /tmp/setup-bashrc.sh && /tmp/setup-bashrc.sh && rm /tmp/setup-bashr
 # ── Copy lab scripts & configs ───────────────────────────────────
 COPY start.sh            /start.sh
 COPY session-manager.sh  /session-manager.sh
+COPY exam-api.py         /exam-api.py
 COPY lab-shell.sh        /usr/local/bin/lab-shell.sh
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
 COPY tinyproxy.conf      /etc/tinyproxy/tinyproxy.conf
 COPY filter.txt          /etc/tinyproxy/filter.txt
 COPY landing/            /var/www/landing/
 
-RUN sed -i 's/\r$//' /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh \
-    && chmod +x /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh \
+RUN sed -i 's/\r$//' /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh /exam-api.py \
+    && chmod +x /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh /exam-api.py \
     && touch /var/log/lab-audit.log && chmod 622 /var/log/lab-audit.log
 
 WORKDIR /home
