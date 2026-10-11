@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PentestLab — Terminal</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #0f111a;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .shell {
+    display: flex;
+    height: 100%;
+    width: 100%;
+  }
+
+  /* ── Sidebar ──────────────────────────────────────── */
+  .sidebar {
+    width: 52px;
+    background: linear-gradient(180deg, #080b14 0%, #060910 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0 16px;
+    position: relative;
+    flex-shrink: 0;
+    user-select: none;
+    z-index: 2;
+  }
+
+  /* Accent edge */
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(137, 221, 255, 0.35) 20%,
+      rgba(130, 170, 255, 0.18) 50%,
+      rgba(199, 146, 234, 0.1) 80%,
+      transparent 100%
+    );
+  }
+
+  .sb-icon {
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    opacity: 0.55;
+    transition: opacity 0.3s;
+  }
+  .sidebar:hover .sb-icon { opacity: 0.8; }
+
+  .sb-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #c3e88d;
+    box-shadow: 0 0 6px rgba(195, 232, 141, 0.4);
+    margin-bottom: 24px;
+    flex-shrink: 0;
+  }
+
+  .sb-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 10px;
+    letter-spacing: 5px;
+    font-weight: 700;
+    color: rgba(137, 221, 255, 0.2);
+    text-transform: uppercase;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', 'Liberation Mono', monospace;
+    transition: color 0.3s;
+  }
+  .sidebar:hover .sb-label { color: rgba(137, 221, 255, 0.35); }
+
+  .sb-brand {
+    font-size: 7px;
+    letter-spacing: 3px;
+    font-weight: 600;
+    color: rgba(166, 172, 205, 0.15);
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    flex-shrink: 0;
+    transition: color 0.3s;
+  }
+  .sidebar:hover .sb-brand { color: rgba(166, 172, 205, 0.3); }
+
+  /* ── Terminal frame ───────────────────────────────── */
+  .term-wrap {
+    flex: 1;
+    position: relative;
+    background: #0f111a;
+    min-width: 0;
+  }
+
+  .term-wrap iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #0f111a;
+  }
+
+  /* ── Error state ──────────────────────────────────── */
+  .term-error {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    color: #a6accd;
+    font-size: 14px;
+    text-align: center;
+    padding: 24px;
+  }
+  .term-error.show { display: flex; }
+  .term-error .err-code {
+    font-size: 48px;
+    font-weight: 800;
+    color: rgba(137, 221, 255, 0.15);
+    font-variant-numeric: tabular-nums;
+  }
+  .term-error a {
+    color: #89ddff;
+    text-decoration: none;
+    font-size: 13px;
+    margin-top: 8px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .term-error a:hover { opacity: 1; }
+
+  /* ── Mobile: collapse sidebar ─────────────────────── */
+  @media (max-width: 480px) {
+    .sidebar { width: 36px; padding: 14px 0 10px; }
+    .sb-label { font-size: 8px; letter-spacing: 4px; }
+    .sb-brand { font-size: 6px; }
+    .sb-icon { transform: scale(0.8); margin-bottom: 14px; }
+    .sb-dot { width: 4px; height: 4px; margin-bottom: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar">
+    <svg class="sb-icon" width="22" height="26" viewBox="0 0 24 28" fill="none">
+      <path d="M12 1L23 8v12l-11 7L1 20V8z" stroke="#89ddff" stroke-width="1.2" opacity="0.6"/>
+      <path d="M12 6l7 4v8l-7 4-7-4v-8z" stroke="#82aaff" stroke-width="0.8" opacity="0.35"/>
+      <circle cx="12" cy="14" r="2" fill="#89ddff" opacity="0.2"/>
+    </svg>
+    <div class="sb-dot"></div>
+    <div class="sb-label">PENTESTLAB</div>
+    <div class="sb-brand">CYBERHX</div>
+  </div>
+  <div class="term-wrap">
+    <iframe id="term" src="about:blank" allow="clipboard-write" allowfullscreen></iframe>
+    <div class="term-error" id="termErr">
+      <div class="err-code">--</div>
+      <div>Lab terminal not available</div>
+      <a href="/">Back to exam</a>
+    </div>
+  </div>
+</div>
+<script>
+(function() {
+  var m = window.location.pathname.match(/\/lab\/(\d+)/);
+  if (m && parseInt(m[1], 10) >= 1 && parseInt(m[1], 10) <= 10) {
+    document.getElementById('term').src = '/term/' + m[1] + '/';
+  } else {
+    document.getElementById('termErr').classList.add('show');
+  }
+})();
+</script>
+</body>
+</html>

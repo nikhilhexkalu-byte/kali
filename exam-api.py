@@ -18,7 +18,7 @@ SESSION_TIMEOUT = int(os.environ.get('SESSION_TIMEOUT', '900'))
 CREDS_FILE = '/tmp/lab-credentials.json'
 API_TOKEN_FILE = '/tmp/.api-token'
 
-TTYD_THEME = '{"background":"#1a1a2e","foreground":"#c8d3f5","cursor":"#82aaff","selectionBackground":"#2d4f67","black":"#1a1a2e","red":"#ff6e6e","green":"#98c379","yellow":"#e5c07b","blue":"#82aaff","magenta":"#c792ea","cyan":"#89ddff","white":"#c8d3f5","brightBlack":"#545c7e","brightRed":"#ff6e6e","brightGreen":"#98c379","brightYellow":"#e5c07b","brightBlue":"#82aaff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}'
+TTYD_THEME = '{"background":"#0f111a","foreground":"#a6accd","cursor":"#ffcc00","selectionBackground":"#1d3b53","black":"#090b10","red":"#ff5370","green":"#c3e88d","yellow":"#ffcb6b","blue":"#82aaff","magenta":"#c792ea","cyan":"#89ddff","white":"#bfc7d5","brightBlack":"#3b4261","brightRed":"#ff5370","brightGreen":"#c3e88d","brightYellow":"#ffcb6b","brightBlue":"#82aaff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}'
 
 STAGES = [
     {'id': 1, 'labs': [1, 2], 'name': 'Reconnaissance'},
@@ -84,7 +84,7 @@ def start_ttyd(lab_num):
     cmd = [
         'ttyd', '-W',
         '-p', str(port),
-        '-b', f'/lab/{lab_num}',
+        '-b', f'/term/{lab_num}',
         '-m', '2',
         '-c', f'lab{lab_num}:{pw}',
         '-t', 'fontSize=14',

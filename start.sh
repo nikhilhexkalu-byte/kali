@@ -130,9 +130,9 @@ LOCATIONS_TMP="/tmp/nginx-locations.conf"
 for i in $(seq 1 "$MAX_LABS"); do
   INTERNAL_PORT=$((7680 + i))
   cat >> "$LOCATIONS_TMP" <<LOCEOF
-    # Lab ${i}
-    location /lab/${i}/ {
-        proxy_pass http://127.0.0.1:${INTERNAL_PORT}/lab/${i}/;
+    # Terminal ${i}
+    location /term/${i}/ {
+        proxy_pass http://127.0.0.1:${INTERNAL_PORT}/term/${i}/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -153,7 +153,7 @@ sed -i "/# __LOCATIONS__/r ${LOCATIONS_TMP}" /etc/nginx/nginx.conf
 sed -i '/# __LOCATIONS__/d' /etc/nginx/nginx.conf
 
 rm -f "$LOCATIONS_TMP"
-echo "[+] Nginx config generated (${MAX_LABS} lab locations)"
+echo "[+] Nginx config generated (${MAX_LABS} terminal locations)"
 
 # Credentials stay in /tmp only (root-readable, served via exam-api)
 # NOT copied to web root — prevents unauthenticated access
