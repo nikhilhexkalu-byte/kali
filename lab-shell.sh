@@ -35,7 +35,7 @@ chmod 600 "$SESSION_FILE" 2>/dev/null || true
   echo ""
   echo -e "\033[1;33m"
   echo "╔══════════════════════════════════════════════════════╗"
-  echo "║  ⚠  WARNING: Session expires in 60 seconds!         ║"
+  echo "║  WARNING: Session expires in 60 seconds!             ║"
   echo "║  Save your work. A new session will be available.   ║"
   echo "╚══════════════════════════════════════════════════════╝"
   echo -e "\033[0m"
@@ -45,7 +45,7 @@ chmod 600 "$SESSION_FILE" 2>/dev/null || true
   echo ""
   echo -e "\033[1;31m"
   echo "╔══════════════════════════════════════════════════════╗"
-  echo "║  🔴  Session expired — disconnecting in 5s...        ║"
+  echo "║  SESSION EXPIRED — disconnecting in 5s...            ║"
   echo "╚══════════════════════════════════════════════════════╝"
   echo -e "\033[0m"
 

@@ -40,7 +40,7 @@ echo -e "   ║  \e[1;34m  ██      \e[1;37m  ███   \e[1;34m███�
 echo -e "   ║  \e[1;34m  ██      \e[1;37m ██ ██  \e[1;34m██   ██ \e[1;37m██      \e[1;34m██   ██ \e[1;37m██   ██ \e[1;34m ██ ██\e[0m   ║"
 echo -e "   ║  \e[1;34m   ██████ \e[1;37m██   ██ \e[1;34m██████  \e[1;37m███████ \e[1;34m██   ██ \e[1;37m██   ██ \e[1;34m██   ██\e[0m  ║"
 echo -e "   ║                                                              ║"
-echo -e "   ║        \e[1;37m⚡ Pentest Training Lab — Kali Linux ⚡\e[0m          ║"
+echo -e "   ║        \e[1;37m  Pentest Training Lab — Kali Linux  \e[0m          ║"
 echo -e "   ║                                                              ║"
 echo -e "   ║  \e[0;32m Session  \e[0m: \e[1;31m15 min timeout\e[0m                                ║"
 echo -e "   ║  \e[0;32m Network  \e[0m: \e[1;33msandboxed — only *.cyberhx.com\e[0m               ║"

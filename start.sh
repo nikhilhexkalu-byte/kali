@@ -23,7 +23,7 @@ echo "╚═══════════════════════�
 if [ -z "$ADMIN_PASSWORD" ]; then
   ADMIN_PASSWORD="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24)"
   echo ""
-  echo "⚠  ADMIN_PASSWORD not set — generated one."
+  echo "[!] ADMIN_PASSWORD not set — generated one."
   echo "   Set ADMIN_PASSWORD env var in Render to make it permanent."
   echo "   View credentials at: https://<host>/admin"
   echo ""
@@ -32,6 +32,12 @@ fi
 # Save admin password to root-only file
 echo "$ADMIN_PASSWORD" > /tmp/.admin-password
 chmod 600 /tmp/.admin-password
+
+# Generate internal API token (for nginx -> exam-api auth)
+INTERNAL_TOKEN="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32)"
+echo "$INTERNAL_TOKEN" > /tmp/.api-token
+chmod 600 /tmp/.api-token
+export INTERNAL_TOKEN
 
 # ── Generate per-lab credentials ─────────────────────────────────
 touch "$CREDS_FILE"
@@ -140,6 +146,7 @@ LOCEOF
 done
 
 sed -e "s|__PORT__|${PORT}|g" \
+    -e "s|__INTERNAL_TOKEN__|${INTERNAL_TOKEN}|g" \
     /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 sed -i "/# __LOCATIONS__/r ${LOCATIONS_TMP}" /etc/nginx/nginx.conf
@@ -148,17 +155,8 @@ sed -i '/# __LOCATIONS__/d' /etc/nginx/nginx.conf
 rm -f "$LOCATIONS_TMP"
 echo "[+] Nginx config generated (${MAX_LABS} lab locations)"
 
-# ── Write credentials JSON for landing page ──────────────────────
-echo '{"labs":[' > /var/www/landing/labs-public.json
-for i in $(seq 1 "$MAX_LABS"); do
-  COMMA=""
-  [ "$i" -gt 1 ] && COMMA=","
-  echo "${COMMA}{\"id\":${i},\"user\":\"lab${i}\",\"path\":\"/lab/${i}/\"}" >> /var/www/landing/labs-public.json
-done
-echo ']}' >> /var/www/landing/labs-public.json
-
-cp "$CREDS_FILE" /var/www/landing/labs-admin.json
-chmod 644 /var/www/landing/labs-admin.json
+# Credentials stay in /tmp only (root-readable, served via exam-api)
+# NOT copied to web root — prevents unauthenticated access
 
 # ── Start nginx ──────────────────────────────────────────────────
 echo "[*] Starting nginx on port ${PORT}..."
@@ -173,7 +171,7 @@ sleep 1
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║     ✅  CyberHX Exam System is LIVE on port ${PORT}       ║"
+echo "║     CyberHX Exam System is LIVE on port ${PORT}           ║"
 echo "║                                                        ║"
 echo "║  Exam Page : https://<host>/                           ║"
 echo "║  Admin     : https://<host>/admin  (pw in Render env)  ║"

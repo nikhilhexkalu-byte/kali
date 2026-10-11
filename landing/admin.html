@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CyberHX Admin — Exam Control</title>
+<title>CyberHX Admin</title>
 <style>
   :root {
     --bg: #0a0e17;
@@ -15,7 +15,7 @@
     --green: #22c55e;
     --red: #ef4444;
     --orange: #f59e0b;
-    --radius: 12px;
+    --radius: 10px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -27,80 +27,66 @@
   }
   .container { max-width: 900px; margin: 0 auto; }
 
-  h1 {
-    font-size: 28px;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, #e2e8f0, #06b6d4);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .subtitle { color: var(--text-dim); margin-bottom: 32px; }
+  h1 { font-size: 26px; margin-bottom: 6px; color: var(--text); }
+  .subtitle { color: var(--text-dim); margin-bottom: 28px; font-size: 14px; }
 
-  /* ── Exam Control Panel ──────────────────────────────── */
   .exam-panel {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 24px;
-    margin-bottom: 32px;
+    padding: 22px;
+    margin-bottom: 28px;
   }
   .exam-panel h2 {
-    font-size: 18px;
-    margin-bottom: 16px;
+    font-size: 16px;
+    margin-bottom: 14px;
     color: var(--accent);
   }
   .exam-row {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
+    gap: 14px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
+    font-size: 14px;
   }
   .exam-badge {
     display: inline-block;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 13px;
+    padding: 3px 12px;
+    border-radius: 4px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
   .exam-badge.idle {
-    background: rgba(100,116,139,0.15);
+    background: rgba(100,116,139,0.1);
     color: var(--text-dim);
-    border: 1px solid rgba(100,116,139,0.3);
+    border: 1px solid rgba(100,116,139,0.2);
   }
   .exam-badge.running {
-    background: rgba(6,182,212,0.12);
+    background: rgba(6,182,212,0.1);
     color: var(--accent);
-    border: 1px solid rgba(6,182,212,0.3);
+    border: 1px solid rgba(6,182,212,0.2);
   }
   .exam-badge.completed {
-    background: rgba(34,197,94,0.12);
+    background: rgba(34,197,94,0.1);
     color: var(--green);
-    border: 1px solid rgba(34,197,94,0.3);
+    border: 1px solid rgba(34,197,94,0.2);
   }
-  .exam-info {
-    font-size: 14px;
-    color: var(--text-dim);
-  }
+  .exam-info { font-size: 14px; color: var(--text-dim); }
   .exam-info strong { color: var(--text); }
   .exam-timer {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 22px; font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: var(--accent);
   }
 
-  .exam-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 16px;
-  }
+  .exam-actions { display: flex; gap: 10px; margin-top: 14px; }
   .btn {
-    padding: 10px 20px;
+    padding: 9px 18px;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
     font-weight: 600;
@@ -108,35 +94,31 @@
     background: var(--bg-card);
     color: var(--text);
   }
-  .btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
   .btn.danger {
-    border-color: rgba(239,68,68,0.4);
+    border-color: rgba(239,68,68,0.3);
     color: var(--red);
   }
   .btn.danger:hover {
     border-color: var(--red);
-    background: rgba(239,68,68,0.1);
+    background: rgba(239,68,68,0.08);
   }
   .btn.primary {
-    background: linear-gradient(135deg, var(--accent), #0891b2);
+    background: var(--accent);
     color: #fff;
     border: none;
   }
-  .btn.primary:hover { filter: brightness(1.15); }
+  .btn.primary:hover { filter: brightness(1.12); }
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     filter: none;
   }
 
-  /* ── Credentials Table ───────────────────────────────── */
   .section-title {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--accent);
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   table {
@@ -149,64 +131,44 @@
   }
   th {
     text-align: left;
-    padding: 14px 16px;
-    background: rgba(6,182,212,0.08);
+    padding: 12px 14px;
+    background: rgba(6,182,212,0.06);
     color: var(--accent);
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: 600;
   }
   td {
-    padding: 12px 16px;
+    padding: 10px 14px;
     border-top: 1px solid var(--border);
-    font-size: 14px;
+    font-size: 13px;
   }
-  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr:hover td { background: rgba(255,255,255,0.015); }
+  .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12px; }
 
-  .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
-
-  .pw-cell {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .pw-cell { display: flex; align-items: center; gap: 8px; }
   .copy-btn {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-dim);
-    padding: 4px 10px;
-    border-radius: 6px;
+    padding: 3px 8px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     transition: all 0.2s;
   }
   .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
   .copy-btn.copied { border-color: var(--green); color: var(--green); }
 
-  .status-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 6px;
-  }
-  .status-dot.active { background: var(--orange); }
-  .status-dot.available { background: var(--green); }
-
-  .bulk-actions {
-    margin-top: 24px;
-    display: flex;
-    gap: 12px;
-  }
+  .bulk-actions { margin-top: 20px; display: flex; gap: 12px; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>&#x1f510; Admin Panel</h1>
-  <p class="subtitle">Exam control &amp; lab credentials</p>
+  <h1>Admin Panel</h1>
+  <p class="subtitle">Exam control and lab credentials</p>
 
-  <!-- ── Exam Control ─────────────────────────────────── -->
   <div class="exam-panel">
     <h2>Exam Control</h2>
     <div class="exam-row">
@@ -224,7 +186,6 @@
     </div>
   </div>
 
-  <!-- ── Credentials ──────────────────────────────────── -->
   <h2 class="section-title">Lab Credentials</h2>
   <table>
     <thead>
@@ -242,17 +203,16 @@
   </table>
 
   <div class="bulk-actions">
-    <button class="btn" onclick="copyAll()">&#x1f4cb; Copy All Credentials</button>
+    <button class="btn" onclick="copyAll()">Copy All Credentials</button>
   </div>
 </div>
 
 <script>
-  let labData = [];
-  let examSyncRemaining = 0;
-  let examLastSync = 0;
+  var labData = [];
+  var examSyncRemaining = 0;
+  var examLastSync = 0;
 
-  const stageMap = {1: [1,2], 2: [3,4], 3: [5,6]};
-  const stageNames = {1: 'Reconnaissance', 2: 'Exploitation', 3: 'Post-Exploitation'};
+  var stageMap = {1: [1,2], 2: [3,4], 3: [5,6]};
 
   function labStage(labId) {
     for (var s in stageMap) {
@@ -273,7 +233,12 @@
     return Math.max(0, Math.round(examSyncRemaining - elapsed));
   }
 
-  // ── Load credentials ──────────────────────────────────
+  function esc(s) {
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(String(s)));
+    return d.innerHTML;
+  }
+
   async function loadCreds() {
     try {
       var res = await fetch('/api/admin/labs');
@@ -291,19 +256,18 @@
     tbody.innerHTML = labs.map(function(lab) {
       var s = labStage(lab.id);
       return '<tr>' +
-        '<td><strong>#' + lab.id + '</strong></td>' +
+        '<td><strong>' + esc(lab.id) + '</strong></td>' +
         '<td>Stage ' + s + '</td>' +
-        '<td class="mono">' + lab.user + '</td>' +
+        '<td class="mono">' + esc(lab.user) + '</td>' +
         '<td><div class="pw-cell">' +
-          '<span class="mono">' + lab.password + '</span>' +
-          '<button class="copy-btn" onclick="copyPw(this,\'' + lab.password + '\')">Copy</button>' +
+          '<span class="mono">' + esc(lab.password) + '</span>' +
+          '<button class="copy-btn" onclick="copyPw(this,\'' + esc(lab.password) + '\')">Copy</button>' +
         '</div></td>' +
-        '<td class="mono">' + lab.path + '</td>' +
+        '<td class="mono">' + esc(lab.path) + '</td>' +
       '</tr>';
     }).join('');
   }
 
-  // ── Exam status polling ────────────────────────────────
   async function pollExam() {
     try {
       var res = await fetch('/api/exam/status');
@@ -324,7 +288,7 @@
     badge.textContent = data.status.toUpperCase();
 
     if (data.status === 'running') {
-      stage.innerHTML = '<strong>Stage ' + data.current_stage + '</strong> — ' + (data.stage_name || '');
+      stage.innerHTML = '<strong>Stage ' + data.current_stage + '</strong> — ' + esc(data.stage_name || '');
       timerRow.style.display = '';
       btnStart.disabled = true;
     } else if (data.status === 'completed') {
@@ -343,7 +307,6 @@
     el.textContent = fmtTime(getRemaining());
   }
 
-  // ── Admin actions ──────────────────────────────────────
   async function adminStartExam() {
     var btn = document.getElementById('btnStart');
     btn.disabled = true;
@@ -373,10 +336,9 @@
     }
   }
 
-  // ── Copy helpers ───────────────────────────────────────
   function copyPw(btn, pw) {
     navigator.clipboard.writeText(pw);
-    btn.textContent = 'Copied!';
+    btn.textContent = 'OK';
     btn.classList.add('copied');
     setTimeout(function() {
       btn.textContent = 'Copy';
@@ -391,10 +353,8 @@
         '  Password=' + l.password + '  URL=' + host + l.path;
     }).join('\n');
     navigator.clipboard.writeText(text);
-    alert('All credentials copied to clipboard!');
   }
 
-  // ── Boot ───────────────────────────────────────────────
   loadCreds();
   pollExam();
   setInterval(pollExam, 3000);

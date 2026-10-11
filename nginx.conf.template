@@ -27,6 +27,13 @@ http {
         listen __PORT__;
         server_name _;
 
+        # ── Security headers ──────────────────────────────────
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
         # ── Landing page ─────────────────────────────────────
         root /var/www/landing;
         index index.html;
@@ -35,33 +42,30 @@ http {
             try_files /index.html =404;
         }
 
-        # ── Exam API (public) ────────────────────────────────
+        # ── Exam API ─────────────────────────────────────────
+        # All exam-api proxied requests carry the internal token
+        # so exam-api rejects direct access from lab users on localhost
+
         location = /api/exam/status {
             proxy_pass http://127.0.0.1:9090;
             proxy_http_version 1.1;
+            proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
         }
 
         location = /api/exam/start {
             limit_req zone=api burst=2 nodelay;
             proxy_pass http://127.0.0.1:9090;
             proxy_http_version 1.1;
+            proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
         }
 
-        # ── Exam API (admin-only) ────────────────────────────
         location = /api/exam/reset {
             limit_req zone=auth burst=3 nodelay;
             auth_basic "CyberHX Admin";
             auth_basic_user_file /etc/nginx/.htpasswd_admin;
             proxy_pass http://127.0.0.1:9090;
             proxy_http_version 1.1;
-        }
-
-        # Public lab status API (no passwords)
-        location = /api/labs {
-            alias /var/www/landing/labs-public.json;
-            default_type application/json;
-            add_header Cache-Control "no-cache";
-            add_header Access-Control-Allow-Origin "*";
+            proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
         }
 
         # ── Admin panel (password protected, rate-limited) ────
@@ -73,20 +77,15 @@ http {
             try_files /admin.html =404;
         }
 
-        # Admin credentials API (password protected, rate-limited)
+        # Admin credentials API (proxied to exam-api, not static file)
         location = /api/admin/labs {
             limit_req zone=auth burst=3 nodelay;
             auth_basic "CyberHX Admin";
             auth_basic_user_file /etc/nginx/.htpasswd_admin;
-            alias /var/www/landing/labs-admin.json;
-            default_type application/json;
-            add_header Cache-Control "no-cache";
+            proxy_pass http://127.0.0.1:9090;
+            proxy_http_version 1.1;
+            proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
         }
-
-        # ── Security headers ──────────────────────────────────
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header X-Frame-Options "DENY" always;
-        add_header Referrer-Policy "no-referrer" always;
 
         # ── Static assets ────────────────────────────────────
         location /assets/ {

@@ -25,15 +25,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ( [ -f /usr/share/wordlists/rockyou.txt.gz ] && gunzip -kf /usr/share/wordlists/rockyou.txt.gz || true )
 
 # ── Create lab users (lab1 … lab10) ──────────────────────────────
-# Tool-specific sudo: only nmap, tcpdump need raw sockets.
-# No blanket NOPASSWD:ALL — prevents sandbox escape.
-RUN for i in $(seq 1 10); do \
+# Create lab users — no sudo at all (nmap/tcpdump get cap_net_raw via setcap).
+RUN apt-get update && apt-get install -y --no-install-recommends libcap2-bin \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && for i in $(seq 1 10); do \
         useradd -m -s /bin/bash "lab${i}" && \
-        echo "lab${i} ALL=(ALL) NOPASSWD: /usr/bin/nmap, /usr/sbin/tcpdump" \
-          > "/etc/sudoers.d/lab${i}" && \
-        chmod 0440 "/etc/sudoers.d/lab${i}" && \
         chmod 700 "/home/lab${i}" ; \
-    done
+    done \
+    && setcap cap_net_raw+ep /usr/bin/nmap 2>/dev/null || true \
+    && setcap cap_net_raw+ep /usr/sbin/tcpdump 2>/dev/null || true
 
 # ── Per-user shell config (prompt, proxy, banner) ────────────────
 COPY setup-bashrc.sh /tmp/setup-bashrc.sh

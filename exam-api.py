@@ -8,7 +8,6 @@ Only one candidate at a time. Stages auto-advance when the timer expires.
 import http.server
 import json
 import os
-import signal
 import subprocess
 import threading
 import time
@@ -17,6 +16,7 @@ import time
 API_PORT = 9090
 SESSION_TIMEOUT = int(os.environ.get('SESSION_TIMEOUT', '900'))
 CREDS_FILE = '/tmp/lab-credentials.json'
+API_TOKEN_FILE = '/tmp/.api-token'
 
 TTYD_THEME = '{"background":"#1a1a2e","foreground":"#c8d3f5","cursor":"#82aaff","selectionBackground":"#2d4f67","black":"#1a1a2e","red":"#ff6e6e","green":"#98c379","yellow":"#e5c07b","blue":"#82aaff","magenta":"#c792ea","cyan":"#89ddff","white":"#c8d3f5","brightBlack":"#545c7e","brightRed":"#ff6e6e","brightGreen":"#98c379","brightYellow":"#e5c07b","brightBlue":"#82aaff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}'
 
@@ -25,6 +25,22 @@ STAGES = [
     {'id': 2, 'labs': [3, 4], 'name': 'Exploitation'},
     {'id': 3, 'labs': [5, 6], 'name': 'Post-Exploitation'},
 ]
+
+# ── Internal auth token (set by start.sh) ──────────────────────────
+_api_token = ''
+try:
+    with open(API_TOKEN_FILE) as f:
+        _api_token = f.read().strip()
+except Exception:
+    pass
+
+
+def check_token(handler):
+    """Check X-Internal-Token header matches the internal token."""
+    if not _api_token:
+        return True  # no token file = dev mode
+    return handler.headers.get('X-Internal-Token', '') == _api_token
+
 
 # ── Shared state ────────────────────────────────────────────────────
 exam = {
@@ -61,7 +77,8 @@ def start_ttyd(lab_num):
         return
 
     # Mark session active (for lab-shell.sh)
-    with open(f'/tmp/.lab-session-{lab_num}', 'w') as f:
+    fd = os.open(f'/tmp/.lab-session-{lab_num}', os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, 'w') as f:
         f.write(str(int(time.time())))
 
     cmd = [
@@ -132,11 +149,12 @@ def begin_stage(stage_num):
         exam['current_stage'] = stage_num
         exam['stage_start'] = now
 
-    # Write stage end-time so lab-shell.sh can sync its countdown
-    with open('/tmp/.stage-end-time', 'w') as f:
+    # Write stage end-time (root-only) so lab-shell.sh can sync its countdown
+    fd = os.open('/tmp/.stage-end-time', os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, 'w') as f:
         f.write(str(end_time))
 
-    print(f'[exam] === Stage {stage_num}: {stage["name"]} — Labs {stage["labs"]} ({SESSION_TIMEOUT}s) ===')
+    print(f'[exam] === Stage {stage_num}: {stage["name"]} -- Labs {stage["labs"]} ({SESSION_TIMEOUT}s) ===')
 
     for lab in stage['labs']:
         start_ttyd(lab)
@@ -224,7 +242,8 @@ def do_reset():
     return {'ok': True}, 200
 
 
-def do_status():
+def do_status(include_creds=False):
+    """Return exam status. Credentials only included for authenticated requests."""
     with lock:
         now = int(time.time())
         out = dict(exam)
@@ -240,21 +259,34 @@ def do_status():
         else:
             out['time_remaining'] = 0
 
-        # Active labs with credentials (safe: 1 candidate at a time)
         if out['current_stage'] > 0:
             stage = STAGES[out['current_stage'] - 1]
             out['stage_name'] = stage['name']
-            creds = load_creds()
-            out['active_labs'] = [
-                {'id': l['id'], 'user': l['user'],
-                 'password': l['password'], 'path': l['path']}
-                for l in creds['labs'] if l['id'] in stage['labs']
-            ]
+
+            if include_creds:
+                # Only include credentials when request is authenticated
+                creds = load_creds()
+                out['active_labs'] = [
+                    {'id': l['id'], 'user': l['user'],
+                     'password': l['password'], 'path': l['path']}
+                    for l in creds['labs'] if l['id'] in stage['labs']
+                ]
+            else:
+                # Public status — lab paths only, no passwords
+                out['active_labs'] = [
+                    {'id': lab_id, 'user': f'lab{lab_id}', 'path': f'/lab/{lab_id}/'}
+                    for lab_id in stage['labs']
+                ]
         else:
             out['active_labs'] = []
             out['stage_name'] = ''
 
     return out, 200
+
+
+def do_admin_labs():
+    """Return all lab credentials (admin only)."""
+    return load_creds(), 200
 
 
 # ── HTTP server ─────────────────────────────────────────────────────
@@ -273,16 +305,30 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == '/api/exam/status':
-            data, code = do_status()
+            # Check if request comes from nginx (has internal token) = authenticated
+            has_token = check_token(self)
+            data, code = do_status(include_creds=has_token)
+            self._json(data, code)
+        elif self.path == '/api/admin/labs':
+            if not check_token(self):
+                self._json({'error': 'forbidden'}, 403)
+                return
+            data, code = do_admin_labs()
             self._json(data, code)
         else:
             self._json({'error': 'not found'}, 404)
 
     def do_POST(self):
         if self.path == '/api/exam/start':
+            if not check_token(self):
+                self._json({'error': 'forbidden'}, 403)
+                return
             data, code = do_start()
             self._json(data, code)
         elif self.path == '/api/exam/reset':
+            if not check_token(self):
+                self._json({'error': 'forbidden'}, 403)
+                return
             data, code = do_reset()
             self._json(data, code)
         else:
@@ -295,7 +341,8 @@ if __name__ == '__main__':
     print(f'[exam-api] Timeout per stage: {SESSION_TIMEOUT}s ({SESSION_TIMEOUT // 60}m)')
     print(f'[exam-api] Stages: {len(STAGES)}')
     for s in STAGES:
-        print(f'  Stage {s["id"]}: {s["name"]} — Labs {s["labs"]}')
+        print(f'  Stage {s["id"]}: {s["name"]} -- Labs {s["labs"]}')
+    print(f'[exam-api] Internal token: {"loaded" if _api_token else "not set (dev mode)"}')
 
     srv = http.server.HTTPServer(('127.0.0.1', API_PORT), Handler)
     try:
