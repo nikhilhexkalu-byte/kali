@@ -160,8 +160,16 @@ unset INTERNAL_TOKEN  # no longer needed — baked into nginx.conf, on disk at /
 echo "[+] Nginx config generated (${MAX_LABS} terminal locations)"
 chmod 600 /etc/nginx/nginx.conf
 
-# Credentials stay in /tmp only (root-readable, served via exam-api)
-# NOT copied to web root — prevents unauthenticated access
+# ── Lock down directories from lab users ─────────────────────────
+# nginx dir — only root + www-data (nginx worker) can enter
+chown root:www-data /etc/nginx
+chmod 750 /etc/nginx
+# web root — public via nginx, but no direct file reads from terminal
+chown -R root:www-data /var/www/landing
+chmod -R o-rwx /var/www/landing
+# tinyproxy config dir
+chmod 750 /etc/tinyproxy
+echo "[+] Filesystem locked — lab users cannot read configs or web root"
 
 # ── Start nginx ──────────────────────────────────────────────────
 echo "[*] Starting nginx on port ${PORT}..."
