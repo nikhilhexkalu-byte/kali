@@ -43,17 +43,14 @@ chmod 600 "$SESSION_FILE" 2>/dev/null || true
 ) &
 TIMER_PID=$!
 
-# Run interactive shell as the lab user with resource limits
-# Limits are passed into the user shell so runuser itself isn't constrained
+# Run interactive shell as the lab user
+# Render's free plan (512MB RAM, 0.1 CPU) already constrains resources;
+# additional ulimits cause fork failures on this tight environment.
+# Security is enforced by separate user accounts, locked-down sudo, and the proxy sandbox.
 cd "/home/${LAB_USER}"
 exec runuser -u "$LAB_USER" -- env \
   HOME="/home/${LAB_USER}" \
   USER="$LAB_USER" \
   LOGNAME="$LAB_USER" \
   SESSION_TIMEOUT="$SESSION_TIMEOUT" \
-  bash --login -c '
-    ulimit -u 50      2>/dev/null  # max 50 processes
-    ulimit -f 102400  2>/dev/null  # max 100MB file size
-    ulimit -n 256     2>/dev/null  # max 256 open files
-    exec bash --login
-  '
+  bash --login
