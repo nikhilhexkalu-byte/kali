@@ -30,7 +30,6 @@
     overflow-x: hidden;
   }
 
-  /* Grid background */
   body::before {
     content: '';
     position: fixed;
@@ -52,136 +51,74 @@
   }
 
   /* ── Header ─────────────────────────────────────────── */
-  .header {
-    text-align: center;
-    margin-bottom: 40px;
-  }
+  .header { text-align: center; margin-bottom: 40px; }
   .logo {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 6px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 6px;
+    font-size: 13px; font-weight: 700; letter-spacing: 6px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
   }
   .header h1 {
-    font-size: 38px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
+    font-size: 38px; font-weight: 800; letter-spacing: -0.5px;
     background: linear-gradient(135deg, #e2e8f0 0%, #06b6d4 50%, #22c55e 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 10px;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; margin-bottom: 10px;
   }
-  .header p {
-    color: var(--text-dim);
-    font-size: 15px;
-    line-height: 1.6;
-  }
+  .header p { color: var(--text-dim); font-size: 15px; line-height: 1.6; }
 
-  /* ── View containers ────────────────────────────────── */
+  /* ── Views ──────────────────────────────────────────── */
   .view { display: none; }
   .view.active { display: block; }
 
-  /* ── IDLE VIEW ──────────────────────────────────────── */
+  /* ── IDLE: stage preview cards ──────────────────────── */
   .exam-overview {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    margin-bottom: 32px;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; margin-bottom: 32px;
   }
-  @media (max-width: 550px) {
-    .exam-overview { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 550px) { .exam-overview { grid-template-columns: 1fr; } }
 
   .stage-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    text-align: center;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; text-align: center;
     transition: border-color 0.2s;
   }
-  .stage-card:hover {
-    border-color: rgba(6,182,212,0.4);
-  }
+  .stage-card:hover { border-color: rgba(6,182,212,0.4); }
   .stage-card .stage-num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(6,182,212,0.12);
-    color: var(--accent);
-    font-weight: 700;
-    font-size: 15px;
-    margin-bottom: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(6,182,212,0.12); color: var(--accent);
+    font-weight: 700; font-size: 15px; margin-bottom: 10px;
   }
-  .stage-card .stage-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .stage-card .stage-meta {
-    font-size: 12px;
-    color: var(--text-dim);
-  }
+  .stage-card .stage-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .stage-card .stage-meta { font-size: 12px; color: var(--text-dim); }
 
   .exam-stats {
-    display: flex;
-    justify-content: center;
-    gap: 28px;
-    margin-bottom: 28px;
-    flex-wrap: wrap;
+    display: flex; justify-content: center; gap: 28px;
+    margin-bottom: 28px; flex-wrap: wrap;
   }
-  .exam-stat {
-    text-align: center;
-  }
+  .exam-stat { text-align: center; }
   .exam-stat .val {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--accent);
+    font-size: 24px; font-weight: 700; color: var(--accent);
     font-variant-numeric: tabular-nums;
   }
   .exam-stat .lbl {
-    font-size: 11px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 2px;
+    font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;
   }
 
   .sandbox-notice {
-    background: rgba(6,182,212,0.05);
-    border: 1px solid rgba(6,182,212,0.2);
-    border-radius: var(--radius);
-    padding: 14px 20px;
-    margin-bottom: 28px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    color: var(--text-dim);
+    background: rgba(6,182,212,0.05); border: 1px solid rgba(6,182,212,0.2);
+    border-radius: var(--radius); padding: 14px 20px; margin-bottom: 28px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--text-dim);
   }
   .sandbox-notice strong { color: var(--text); }
 
   .start-btn {
-    display: block;
-    width: 100%;
-    max-width: 340px;
-    margin: 0 auto 24px;
-    padding: 16px 32px;
+    display: block; width: 100%; max-width: 340px;
+    margin: 0 auto 24px; padding: 16px 32px;
     background: linear-gradient(135deg, #06b6d4, #0891b2);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: all 0.2s;
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 18px; font-weight: 700; cursor: pointer;
+    letter-spacing: 0.5px; transition: all 0.2s;
   }
   .start-btn:hover {
     filter: brightness(1.15);
@@ -189,236 +126,156 @@
     transform: translateY(-1px);
   }
   .start-btn:disabled {
-    background: var(--border);
-    color: var(--text-dim);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-    filter: none;
+    background: var(--border); color: var(--text-dim);
+    cursor: not-allowed; transform: none; box-shadow: none; filter: none;
   }
-  .start-btn:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
   .error-msg {
-    text-align: center;
-    color: var(--red);
-    font-size: 14px;
-    margin-top: -16px;
-    margin-bottom: 16px;
-    display: none;
+    text-align: center; color: var(--red); font-size: 14px;
+    margin-top: -16px; margin-bottom: 16px; display: none;
   }
 
-  /* ── RUNNING VIEW ───────────────────────────────────── */
-  /* Stage progress bar */
+  /* ── RUNNING: progress bar ─────────────────────────── */
   .progress-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin-bottom: 28px;
   }
   .dot {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 15px;
-    background: var(--bg-card);
-    border: 2px solid var(--border);
-    color: var(--text-dim);
-    transition: all 0.3s;
-    flex-shrink: 0;
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px;
+    background: var(--bg-card); border: 2px solid var(--border);
+    color: var(--text-dim); transition: all 0.3s; flex-shrink: 0;
   }
   .dot.active {
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--accent); color: var(--accent);
     background: rgba(6,182,212,0.12);
     box-shadow: 0 0 16px rgba(6,182,212,0.3);
     animation: dotPulse 2s infinite;
   }
-  .dot.done {
-    border-color: var(--green);
-    color: #fff;
-    background: var(--green);
-  }
+  .dot.done { border-color: var(--green); color: #fff; background: var(--green); }
   @keyframes dotPulse {
     0%, 100% { box-shadow: 0 0 16px rgba(6,182,212,0.3); }
     50% { box-shadow: 0 0 24px rgba(6,182,212,0.5); }
   }
-
-  .line {
-    width: 60px;
-    height: 2px;
-    background: var(--border);
-    transition: background 0.3s;
-    flex-shrink: 0;
+  .pline {
+    width: 60px; height: 2px; background: var(--border);
+    transition: background 0.3s; flex-shrink: 0;
   }
-  .line.done {
-    background: var(--green);
-  }
+  .pline.done { background: var(--green); }
 
-  .stage-label {
-    text-align: center;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 8px;
+  /* ── RUNNING: stage sections ───────────────────────── */
+  .stage-section {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 14px;
+    transition: all 0.3s;
   }
+  .stage-section.is-active {
+    border-color: rgba(6,182,212,0.4);
+    box-shadow: 0 0 24px rgba(6,182,212,0.08);
+  }
+  .stage-section.is-locked { opacity: 0.45; }
+  .stage-section.is-done { opacity: 0.65; }
 
-  .timer {
-    text-align: center;
-    font-size: 64px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--accent);
-    margin-bottom: 28px;
-    letter-spacing: 2px;
-    transition: color 0.3s;
+  .ss-header {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .ss-title { font-size: 15px; font-weight: 600; }
+  .ss-timer {
+    font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums;
+    color: var(--accent); transition: color 0.3s;
     font-family: 'Inter', -apple-system, sans-serif;
   }
-  .timer.warning { color: var(--orange); }
-  .timer.critical { color: var(--red); }
+  .ss-timer.warning { color: var(--orange); }
+  .ss-timer.critical { color: var(--red); }
 
+  .ss-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 4px 12px; border-radius: 16px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .ss-badge.locked {
+    background: rgba(100,116,139,0.12); color: var(--text-dim);
+    border: 1px solid rgba(100,116,139,0.2);
+  }
+  .ss-badge.done {
+    background: rgba(34,197,94,0.12); color: var(--green);
+    border: 1px solid rgba(34,197,94,0.25);
+  }
+
+  .ss-locked-info {
+    font-size: 12px; color: var(--text-dim); margin-top: 6px;
+  }
+
+  /* ── Lab cards (inside active stage) ───────────────── */
   .lab-cards {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-    margin-bottom: 20px;
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 14px; margin-top: 16px;
   }
-  @media (max-width: 500px) {
-    .lab-cards { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 500px) { .lab-cards { grid-template-columns: 1fr; } }
 
   .lab-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    transition: border-color 0.2s;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; transition: border-color 0.2s;
   }
-  .lab-card:hover {
-    border-color: rgba(6,182,212,0.4);
-  }
+  .lab-card:hover { border-color: rgba(6,182,212,0.4); }
   .lab-card .lab-header {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--accent);
-    margin-bottom: 14px;
+    font-size: 17px; font-weight: 700; color: var(--accent); margin-bottom: 12px;
   }
   .lab-cred {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px; font-size: 13px;
   }
-  .lab-cred .label {
-    color: var(--text-dim);
-    min-width: 38px;
-  }
+  .lab-cred .label { color: var(--text-dim); min-width: 38px; }
   .lab-cred .value {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    color: var(--text);
-    flex: 1;
-    word-break: break-all;
+    color: var(--text); flex: 1; word-break: break-all;
   }
   .copy-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    padding: 2px 8px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 11px;
-    transition: all 0.2s;
-    flex-shrink: 0;
+    background: none; border: 1px solid var(--border);
+    color: var(--text-dim); padding: 2px 8px; border-radius: 5px;
+    cursor: pointer; font-size: 11px; transition: all 0.2s; flex-shrink: 0;
   }
-  .copy-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-  .copy-btn.ok {
-    border-color: var(--green);
-    color: var(--green);
-  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.ok { border-color: var(--green); color: var(--green); }
   .enter-btn {
-    display: block;
-    width: 100%;
-    margin-top: 14px;
-    padding: 10px;
+    display: block; width: 100%; margin-top: 12px; padding: 10px;
     background: linear-gradient(135deg, var(--accent), #0891b2);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    text-align: center;
-    transition: filter 0.2s;
+    color: #fff; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    text-decoration: none; text-align: center; transition: filter 0.2s;
   }
-  .enter-btn:hover {
-    filter: brightness(1.15);
-  }
+  .enter-btn:hover { filter: brightness(1.15); }
 
   .advance-notice {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-bottom: 16px;
+    text-align: center; font-size: 12px;
+    color: var(--text-dim); margin-top: 4px; margin-bottom: 16px;
   }
 
-  /* ── COMPLETED VIEW ─────────────────────────────────── */
-  .complete-box {
-    text-align: center;
-    padding: 48px 24px;
-  }
-  .complete-icon {
-    font-size: 56px;
-    margin-bottom: 16px;
-  }
+  /* ── COMPLETED ─────────────────────────────────────── */
+  .complete-box { text-align: center; padding: 48px 24px; }
+  .complete-icon { font-size: 56px; margin-bottom: 16px; }
   .complete-box h2 {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 10px;
+    font-size: 28px; font-weight: 700; margin-bottom: 10px;
     background: linear-gradient(135deg, #22c55e, #06b6d4);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .complete-box p {
-    color: var(--text-dim);
-    font-size: 15px;
-    line-height: 1.6;
-    max-width: 400px;
-    margin: 0 auto;
+    color: var(--text-dim); font-size: 15px; line-height: 1.6;
+    max-width: 400px; margin: 0 auto;
   }
   .complete-stages {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    margin-top: 24px;
+    display: flex; justify-content: center; gap: 24px; margin-top: 24px;
   }
   .complete-stage {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--green);
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--green);
   }
 
   /* ── Footer ─────────────────────────────────────────── */
   .footer {
-    text-align: center;
-    padding: 24px 0;
-    border-top: 1px solid var(--border);
-    color: var(--text-dim);
-    font-size: 12px;
-    margin-top: 32px;
+    text-align: center; padding: 24px 0; border-top: 1px solid var(--border);
+    color: var(--text-dim); font-size: 12px; margin-top: 32px;
   }
   .footer a { color: var(--accent); text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
@@ -430,265 +287,236 @@
   <div class="header">
     <div class="logo">CyberHX</div>
     <h1>Pentest Exam</h1>
-    <p id="headerSub">Sandboxed Kali Linux terminals &middot; 3 stages &middot; 45 minutes total</p>
+    <p>Sandboxed Kali Linux terminals &middot; 3 stages &middot; 45 minutes total</p>
   </div>
 
-  <!-- ═══ IDLE VIEW ══════════════════════════════════════ -->
+  <!-- ═══ IDLE ═══════════════════════════════════════════ -->
   <div class="view active" id="view-idle">
     <div class="exam-overview" id="stageOverview"></div>
 
     <div class="exam-stats">
-      <div class="exam-stat">
-        <div class="val">3</div>
-        <div class="lbl">Stages</div>
-      </div>
-      <div class="exam-stat">
-        <div class="val">6</div>
-        <div class="lbl">Labs</div>
-      </div>
-      <div class="exam-stat">
-        <div class="val" id="statTime">15m</div>
-        <div class="lbl">Per Stage</div>
-      </div>
-      <div class="exam-stat">
-        <div class="val" id="statTotal">45m</div>
-        <div class="lbl">Total</div>
-      </div>
+      <div class="exam-stat"><div class="val">3</div><div class="lbl">Stages</div></div>
+      <div class="exam-stat"><div class="val">6</div><div class="lbl">Labs</div></div>
+      <div class="exam-stat"><div class="val" id="statTime">15m</div><div class="lbl">Per Stage</div></div>
+      <div class="exam-stat"><div class="val" id="statTotal">45m</div><div class="lbl">Total</div></div>
     </div>
 
     <div class="sandbox-notice">
       <span style="font-size:18px">&#x1f512;</span>
-      <span><strong>Sandbox</strong> &mdash; Network restricted to <code>*.cyberhx.com</code>. All other domains are blocked.</span>
+      <span><strong>Sandbox</strong> &mdash; Network restricted to <code>*.cyberhx.com</code>. All other domains blocked.</span>
     </div>
 
     <button class="start-btn" id="startBtn" onclick="startExam()">Enter Exam</button>
     <div class="error-msg" id="errorMsg"></div>
   </div>
 
-  <!-- ═══ RUNNING VIEW ═══════════════════════════════════ -->
+  <!-- ═══ RUNNING ════════════════════════════════════════ -->
   <div class="view" id="view-running">
     <div class="progress-bar">
       <div class="dot" id="dot-1">1</div>
-      <div class="line" id="line-1"></div>
+      <div class="pline" id="line-1"></div>
       <div class="dot" id="dot-2">2</div>
-      <div class="line" id="line-2"></div>
+      <div class="pline" id="line-2"></div>
       <div class="dot" id="dot-3">3</div>
     </div>
 
-    <div class="stage-label" id="stageLabel">Stage 1 &middot; Reconnaissance</div>
-    <div class="timer" id="timer">15:00</div>
-
-    <div class="lab-cards" id="labCards"></div>
+    <div id="allStages"></div>
 
     <div class="advance-notice">Labs auto-close when the timer expires. Next stage starts automatically.</div>
   </div>
 
-  <!-- ═══ COMPLETED VIEW ═════════════════════════════════ -->
+  <!-- ═══ COMPLETED ══════════════════════════════════════ -->
   <div class="view" id="view-completed">
     <div class="complete-box">
       <div class="complete-icon">&#x2705;</div>
       <h2>Exam Complete</h2>
-      <p>All 3 stages have been completed. Your session data has been recorded. Contact your administrator for results.</p>
+      <p>All 3 stages completed. Your session data has been recorded. Contact your administrator for results.</p>
       <div class="complete-stages" id="completeStages"></div>
     </div>
   </div>
 
   <div class="footer">
-    <p>Powered by <a href="https://cyberhx.com" target="_blank">CyberHX</a> &middot; Kali Linux &middot; Only scan systems you are authorized to test.</p>
+    Powered by <a href="https://cyberhx.com" target="_blank">CyberHX</a> &middot; Kali Linux &middot; Only scan systems you are authorized to test.
   </div>
 
 </div>
 
 <script>
 (function() {
-  // ── State ──────────────────────────────────────────────
-  let syncedRemaining = 0;
-  let lastSyncTime = 0;
-  let currentView = 'idle';
-  let stagesData = [];
+  var syncedRem = 0, lastSync = 0, curView = 'idle', stagesCache = [];
 
-  // ── Timer sync ─────────────────────────────────────────
-  function getRemaining() {
-    if (syncedRemaining <= 0) return 0;
-    const elapsed = (Date.now() / 1000) - lastSyncTime;
-    return Math.max(0, Math.round(syncedRemaining - elapsed));
+  function getRem() {
+    if (syncedRem <= 0) return 0;
+    return Math.max(0, Math.round(syncedRem - ((Date.now() / 1000) - lastSync)));
   }
-
-  function fmtTime(s) {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
+  function fmt(s) {
+    var m = Math.floor(s / 60), sec = Math.floor(s % 60);
     return m + ':' + String(sec).padStart(2, '0');
   }
 
-  // ── API calls ──────────────────────────────────────────
+  /* ── Poll ────────────────────────────────────────────── */
   async function poll() {
     try {
-      const res = await fetch('/api/exam/status');
-      const data = await res.json();
-      syncedRemaining = data.time_remaining || 0;
-      lastSyncTime = Date.now() / 1000;
-      stagesData = data.stages || [];
-      render(data);
-    } catch (e) {
-      // silent retry
-    }
+      var res = await fetch('/api/exam/status');
+      var d = await res.json();
+      syncedRem = d.time_remaining || 0;
+      lastSync = Date.now() / 1000;
+      if (d.stages) stagesCache = d.stages;
+      render(d);
+    } catch (e) {}
   }
 
+  /* ── Start exam ─────────────────────────────────────── */
   window.startExam = async function() {
     var btn = document.getElementById('startBtn');
-    var errEl = document.getElementById('errorMsg');
-    btn.disabled = true;
-    btn.textContent = 'Starting...';
-    errEl.style.display = 'none';
+    var err = document.getElementById('errorMsg');
+    btn.disabled = true; btn.textContent = 'Starting...';
+    err.style.display = 'none';
     try {
       var res = await fetch('/api/exam/start', { method: 'POST' });
-      var data = await res.json();
-      if (data.error) {
-        errEl.textContent = data.error;
-        errEl.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = 'Enter Exam';
-      } else {
-        poll();
-      }
+      var d = await res.json();
+      if (d.error) {
+        err.textContent = d.error; err.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Enter Exam';
+      } else { poll(); }
     } catch (e) {
-      errEl.textContent = 'Failed to connect. Try again.';
-      errEl.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Enter Exam';
+      err.textContent = 'Failed to connect. Try again.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Enter Exam';
     }
   };
 
-  // ── Render ─────────────────────────────────────────────
-  function setView(name) {
-    if (currentView === name) return;
-    currentView = name;
-    document.querySelectorAll('.view').forEach(function(el) {
-      el.classList.remove('active');
-    });
-    var target = document.getElementById('view-' + name);
-    if (target) target.classList.add('active');
+  /* ── View switch ────────────────────────────────────── */
+  function setView(v) {
+    if (curView === v) return; curView = v;
+    document.querySelectorAll('.view').forEach(function(el) { el.classList.remove('active'); });
+    var t = document.getElementById('view-' + v);
+    if (t) t.classList.add('active');
   }
 
-  function render(data) {
-    // Switch view
-    if (data.status === 'idle') {
-      setView('idle');
-      renderIdleOverview(data);
-      // Reset start button
-      var btn = document.getElementById('startBtn');
-      btn.disabled = false;
-      btn.textContent = 'Enter Exam';
-    } else if (data.status === 'running') {
-      setView('running');
-      renderRunning(data);
-    } else if (data.status === 'completed') {
-      setView('completed');
-      renderCompleted(data);
-    }
+  /* ── Render ─────────────────────────────────────────── */
+  function render(d) {
+    if (d.status === 'idle') { setView('idle'); renderIdle(d); }
+    else if (d.status === 'running') { setView('running'); renderRunning(d); }
+    else if (d.status === 'completed') { setView('completed'); renderComplete(d); }
   }
 
-  function renderIdleOverview(data) {
-    var stages = data.stages || [];
-    var overview = document.getElementById('stageOverview');
-    var timeout = data.session_timeout || 900;
-    document.getElementById('statTime').textContent = Math.floor(timeout / 60) + 'm';
-    document.getElementById('statTotal').textContent = Math.floor((timeout * stages.length) / 60) + 'm';
-
-    overview.innerHTML = stages.map(function(s) {
+  function renderIdle(d) {
+    var stages = d.stages || [];
+    var t = d.session_timeout || 900;
+    document.getElementById('statTime').textContent = Math.floor(t / 60) + 'm';
+    document.getElementById('statTotal').textContent = Math.floor((t * stages.length) / 60) + 'm';
+    document.getElementById('stageOverview').innerHTML = stages.map(function(s) {
       return '<div class="stage-card">' +
         '<div class="stage-num">' + s.id + '</div>' +
         '<div class="stage-title">' + s.name + '</div>' +
-        '<div class="stage-meta">Labs ' + s.labs.join(' &amp; ') + ' &middot; ' + Math.floor(timeout / 60) + ' min</div>' +
+        '<div class="stage-meta">Labs ' + s.labs.join(' &amp; ') + ' &middot; ' + Math.floor(t / 60) + ' min</div>' +
       '</div>';
     }).join('');
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('startBtn').textContent = 'Enter Exam';
   }
 
-  function renderRunning(data) {
-    var cur = data.current_stage;
-    var completed = data.completed || [];
+  function renderRunning(d) {
+    var cur = d.current_stage;
+    var done = d.completed || [];
+    var stages = d.stages || stagesCache;
+    var labs = d.active_labs || [];
 
     // Progress dots
     for (var i = 1; i <= 3; i++) {
       var dot = document.getElementById('dot-' + i);
       dot.className = 'dot';
-      if (completed.indexOf(i) !== -1) {
-        dot.classList.add('done');
-        dot.innerHTML = '&#x2713;';
-      } else if (i === cur) {
-        dot.classList.add('active');
-        dot.textContent = i;
-      } else {
-        dot.textContent = i;
-      }
+      if (done.indexOf(i) !== -1) { dot.classList.add('done'); dot.innerHTML = '&#x2713;'; }
+      else if (i === cur) { dot.classList.add('active'); dot.textContent = i; }
+      else { dot.textContent = i; }
     }
-    // Lines
     for (var j = 1; j <= 2; j++) {
-      var line = document.getElementById('line-' + j);
-      line.className = 'line';
-      if (completed.indexOf(j) !== -1) line.classList.add('done');
+      var ln = document.getElementById('line-' + j);
+      ln.className = 'pline';
+      if (done.indexOf(j) !== -1) ln.classList.add('done');
     }
 
-    // Stage label
-    document.getElementById('stageLabel').innerHTML =
-      'Stage ' + cur + ' &middot; ' + (data.stage_name || '');
+    // Build all stage sections
+    var html = '';
+    stages.forEach(function(s) {
+      var isDone = done.indexOf(s.id) !== -1;
+      var isActive = s.id === cur;
 
-    // Lab cards
-    var labs = data.active_labs || [];
-    document.getElementById('labCards').innerHTML = labs.map(function(lab) {
-      return '<div class="lab-card">' +
-        '<div class="lab-header">Lab #' + lab.id + '</div>' +
-        '<div class="lab-cred">' +
-          '<span class="label">User</span>' +
-          '<span class="value">' + lab.user + '</span>' +
-        '</div>' +
-        '<div class="lab-cred">' +
-          '<span class="label">Pass</span>' +
-          '<span class="value">' + lab.password + '</span>' +
-          '<button class="copy-btn" onclick="copyPw(this,\'' + lab.password + '\')">Copy</button>' +
-        '</div>' +
-        '<a href="' + lab.path + '" class="enter-btn" target="_blank">Open Terminal &#x2197;</a>' +
-      '</div>';
-    }).join('');
+      if (isActive) {
+        html += '<div class="stage-section is-active">';
+        html += '<div class="ss-header">';
+        html += '<div class="ss-title">Stage ' + s.id + ' &middot; ' + s.name + '</div>';
+        html += '<div class="ss-timer" id="activeTimer">' + fmt(syncedRem) + '</div>';
+        html += '</div>';
+        // Lab cards
+        html += '<div class="lab-cards">';
+        labs.forEach(function(lab) {
+          html += '<div class="lab-card">';
+          html += '<div class="lab-header">Lab #' + lab.id + '</div>';
+          html += '<div class="lab-cred"><span class="label">User</span><span class="value">' + lab.user + '</span></div>';
+          html += '<div class="lab-cred"><span class="label">Pass</span><span class="value">' + lab.password + '</span>';
+          html += '<button class="copy-btn" onclick="copyPw(this,\'' + lab.password + '\')">Copy</button></div>';
+          html += '<a href="' + lab.path + '" class="enter-btn" target="_blank">Open Terminal &#x2197;</a>';
+          html += '</div>';
+        });
+        html += '</div></div>';
+
+      } else if (isDone) {
+        html += '<div class="stage-section is-done">';
+        html += '<div class="ss-header">';
+        html += '<div class="ss-title">Stage ' + s.id + ' &middot; ' + s.name + '</div>';
+        html += '<span class="ss-badge done">&#x2713; Complete</span>';
+        html += '</div></div>';
+
+      } else {
+        // Locked
+        html += '<div class="stage-section is-locked">';
+        html += '<div class="ss-header">';
+        html += '<div class="ss-title">Stage ' + s.id + ' &middot; ' + s.name + '</div>';
+        html += '<span class="ss-badge locked">&#x1f512; Locked</span>';
+        html += '</div>';
+        html += '<div class="ss-locked-info">Labs ' + s.labs.join(' &amp; ') + ' &mdash; Available after Stage ' + (s.id - 1) + '</div>';
+        html += '</div>';
+      }
+    });
+
+    document.getElementById('allStages').innerHTML = html;
   }
 
-  function renderCompleted(data) {
-    var stages = data.stages || stagesData;
+  function renderComplete(d) {
+    var stages = d.stages || stagesCache;
     document.getElementById('completeStages').innerHTML = stages.map(function(s) {
       return '<div class="complete-stage">&#x2713; ' + s.name + '</div>';
     }).join('');
   }
 
-  // ── Timer tick ─────────────────────────────────────────
-  function tickTimer() {
-    if (currentView !== 'running') return;
-    var rem = getRemaining();
-    var el = document.getElementById('timer');
-    el.textContent = fmtTime(rem);
-    el.className = 'timer';
+  /* ── Timer tick ─────────────────────────────────────── */
+  function tick() {
+    if (curView !== 'running') return;
+    var rem = getRem();
+    var el = document.getElementById('activeTimer');
+    if (!el) return;
+    el.textContent = fmt(rem);
+    el.className = 'ss-timer';
     if (rem <= 30) el.classList.add('critical');
     else if (rem <= 60) el.classList.add('warning');
   }
 
-  // ── Copy helper ────────────────────────────────────────
+  /* ── Copy ───────────────────────────────────────────── */
   window.copyPw = function(btn, text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function() {
-        btn.textContent = '✓';
-        btn.classList.add('ok');
-        setTimeout(function() {
-          btn.textContent = 'Copy';
-          btn.classList.remove('ok');
-        }, 1500);
+        btn.textContent = '✓'; btn.classList.add('ok');
+        setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1500);
       }).catch(function() {});
     }
   };
 
-  // ── Boot ───────────────────────────────────────────────
+  /* ── Boot ───────────────────────────────────────────── */
   poll();
   setInterval(poll, 2000);
-  setInterval(tickTimer, 500);
-
+  setInterval(tick, 500);
 })();
 </script>
 </body>
