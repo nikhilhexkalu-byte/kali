@@ -7,15 +7,23 @@
 LAB_NUM="${1:-1}"
 LAB_USER="lab${LAB_NUM}"
 SESSION_FILE="/tmp/.lab-session-${LAB_NUM}"
+LAB_END_FILE="/tmp/.lab-end-time-${LAB_NUM}"
 STAGE_END_FILE="/tmp/.stage-end-time"
 
 # ── Calculate remaining time ─────────────────────────────────────
-# In exam mode, sync with the stage timer so warnings are accurate.
-if [ -f "$STAGE_END_FILE" ]; then
-  STAGE_END=$(cat "$STAGE_END_FILE" 2>/dev/null || echo "0")
-  NOW=$(date +%s)
-  SESSION_TIMEOUT=$((STAGE_END - NOW))
-  [ "$SESSION_TIMEOUT" -lt 30 ] && SESSION_TIMEOUT=30
+# Prefer this lab's own deadline (written per lease or per demo stage). The
+# shared stage file is only a fallback for older callers; a leased session
+# must never inherit a stale stage clock.
+NOW=$(date +%s)
+END_TIME=""
+if [ -f "$LAB_END_FILE" ]; then
+  END_TIME=$(cat "$LAB_END_FILE" 2>/dev/null || echo "")
+elif [ -f "$STAGE_END_FILE" ]; then
+  END_TIME=$(cat "$STAGE_END_FILE" 2>/dev/null || echo "")
+fi
+
+if [ -n "$END_TIME" ] && [ "$END_TIME" -gt "$NOW" ] 2>/dev/null; then
+  SESSION_TIMEOUT=$((END_TIME - NOW))
 else
   SESSION_TIMEOUT="${SESSION_TIMEOUT:-900}"
 fi

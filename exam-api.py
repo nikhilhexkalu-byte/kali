@@ -129,8 +129,20 @@ def new_password():
     return base64.b64encode(secrets.token_bytes(18)).decode().replace('+', 'A').replace('/', 'B').replace('=', '')[:20]
 
 
-def start_ttyd(lab_num, password=None):
-    """Launch a ttyd instance for one lab."""
+def _write_root_only(path, value):
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, 'w') as f:
+        f.write(str(value))
+
+
+def start_ttyd(lab_num, password=None, end_time=None):
+    """Launch a ttyd instance for one lab.
+
+    end_time is the epoch this shell must die at. It is written to a per-lab
+    file that lab-shell.sh prefers over the shared demo stage clock, so a
+    lease of any length counts down correctly and a stale stage file from an
+    earlier demo can never cut a leased session short.
+    """
     port = 7680 + lab_num
     pw = password or get_password(lab_num)
     if not pw:
@@ -138,9 +150,14 @@ def start_ttyd(lab_num, password=None):
         return False
 
     # Mark session active (for lab-shell.sh)
-    fd = os.open(f'/tmp/.lab-session-{lab_num}', os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, 'w') as f:
-        f.write(str(int(time.time())))
+    _write_root_only(f'/tmp/.lab-session-{lab_num}', int(time.time()))
+    if end_time:
+        _write_root_only(f'/tmp/.lab-end-time-{lab_num}', int(end_time))
+    else:
+        try:
+            os.remove(f'/tmp/.lab-end-time-{lab_num}')
+        except OSError:
+            pass
 
     cmd = [
         'ttyd', '-W',
@@ -179,10 +196,11 @@ def stop_lab(lab_num):
 
     subprocess.run(['pkill', '-9', '-u', user], capture_output=True)
 
-    try:
-        os.remove(f'/tmp/.lab-session-{lab_num}')
-    except OSError:
-        pass
+    for f in (f'/tmp/.lab-session-{lab_num}', f'/tmp/.lab-end-time-{lab_num}'):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 
     home = f'/home/{user}'
     subprocess.run(
@@ -287,9 +305,7 @@ def begin_stage(stage_num):
         exam['current_stage'] = stage_num
         exam['stage_start'] = now
 
-    fd = os.open('/tmp/.stage-end-time', os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, 'w') as f:
-        f.write(str(end_time))
+    _write_root_only('/tmp/.stage-end-time', end_time)
 
     print(f'[demo] === Stage {stage_num}: {stage["name"]} -- Labs {stage["labs"]} ({SESSION_TIMEOUT}s) ===')
 
@@ -298,7 +314,7 @@ def begin_stage(stage_num):
         with lock:
             slots[lab].update({'owner': 'demo', 'password': pw,
                                'expires_at': end_time, 'started_at': now})
-        start_ttyd(lab, pw)
+        start_ttyd(lab, pw, end_time=end_time)
 
     timer_handle = threading.Timer(SESSION_TIMEOUT, advance)
     timer_handle.daemon = True
@@ -535,7 +551,7 @@ def lease_create(body):
         with lock:
             slots[lab_num]['flag_sha256'] = flag_sha256
 
-    if not start_ttyd(lab_num, password):
+    if not start_ttyd(lab_num, password, end_time=expires_at):
         release_lease(lab_num)
         return {'error': 'failed to start terminal'}, 500
 
