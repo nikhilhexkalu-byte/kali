@@ -3,7 +3,7 @@ set -e
 
 # ── Config ───────────────────────────────────────────────────────
 PORT="${PORT:-10000}"
-MAX_LABS="${MAX_LABS:-4}"
+MAX_LABS="${MAX_LABS:-2}"
 SESSION_TIMEOUT="${SESSION_TIMEOUT:-900}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 ALLOWED_DOMAIN="${ALLOWED_DOMAIN:-cyberhx.com}"
@@ -194,7 +194,7 @@ for i in $(seq 1 "$MAX_LABS"); do
   ttyd -W \
     -p "$INTERNAL_PORT" \
     -b "/lab/${i}" \
-    -m 1 \
+    -m 2 \
     -c "lab${i}:${PASSWORD}" \
     -t fontSize=15 \
     -t fontFamily="'JetBrains Mono','Fira Code','Cascadia Code',monospace" \
@@ -243,7 +243,7 @@ while true; do
       ttyd -W \
         -p "$INTERNAL_PORT" \
         -b "/lab/${i}" \
-        -m 1 \
+        -m 2 \
         -c "lab${i}:${PASSWORD}" \
         -t fontSize=15 \
         -t fontFamily="'JetBrains Mono','Fira Code','Cascadia Code',monospace" \

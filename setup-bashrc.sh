@@ -7,8 +7,8 @@ alias ll='ls -lah --color=auto'
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
 
-# ── Audit logging — all commands logged to syslog ────────
-export PROMPT_COMMAND='echo "$(date "+%Y-%m-%d %H:%M:%S") [${USER}] $(history 1 | sed "s/^[ ]*[0-9]*[ ]*//")" >> /var/log/lab-audit.log 2>/dev/null'
+# ── Audit logging (uses bash builtins only — no forks) ────────
+export PROMPT_COMMAND='printf "%(%Y-%m-%d %H:%M:%S)T [%s] %s\n" -1 "$USER" "$(history 1)" >> /var/log/lab-audit.log 2>/dev/null'
 export HISTTIMEFORMAT="%F %T  "
 export HISTSIZE=500
 export HISTFILESIZE=0

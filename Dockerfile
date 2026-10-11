@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TERM=xterm-256color \
     LANG=C.UTF-8 \
     TZ=Asia/Kolkata \
-    MAX_LABS=4 \
+    MAX_LABS=2 \
     SESSION_TIMEOUT=900 \
     ALLOWED_DOMAIN=cyberhx.com
 
