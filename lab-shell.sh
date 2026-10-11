@@ -43,17 +43,17 @@ chmod 600 "$SESSION_FILE" 2>/dev/null || true
 ) &
 TIMER_PID=$!
 
-# Apply resource limits to prevent fork bombs and resource exhaustion
-ulimit -u 50        # max 50 processes per user
-ulimit -f 102400    # max 100MB file size (in 1KB blocks)
-ulimit -n 256       # max 256 open files
-ulimit -v 262144    # max 256MB virtual memory (in KB)
-
-# Run interactive shell as the lab user
+# Run interactive shell as the lab user with resource limits
+# Limits are passed into the user shell so runuser itself isn't constrained
 cd "/home/${LAB_USER}"
 exec runuser -u "$LAB_USER" -- env \
   HOME="/home/${LAB_USER}" \
   USER="$LAB_USER" \
   LOGNAME="$LAB_USER" \
   SESSION_TIMEOUT="$SESSION_TIMEOUT" \
-  bash --login
+  bash --login -c '
+    ulimit -u 50      2>/dev/null  # max 50 processes
+    ulimit -f 102400  2>/dev/null  # max 100MB file size
+    ulimit -n 256     2>/dev/null  # max 256 open files
+    exec bash --login
+  '
