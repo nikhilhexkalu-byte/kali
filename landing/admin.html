@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberHX Admin — Lab Credentials</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --bg-card: #111827;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --accent: #06b6d4;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #e2e8f0, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { color: var(--text-dim); margin-bottom: 32px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  th {
+    text-align: left;
+    padding: 14px 16px;
+    background: rgba(6,182,212,0.08);
+    color: var(--accent);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  td {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+  .pw-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .copy-btn.copied {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .status-dot.active { background: var(--orange); }
+  .status-dot.available { background: var(--green); }
+
+  .bulk-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+  }
+  .action-btn {
+    padding: 10px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔐 Admin Panel</h1>
+  <p class="subtitle">Lab credentials — share these with your students</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Lab</th>
+        <th>Username</th>
+        <th>Password</th>
+        <th>URL Path</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="credTable">
+      <tr><td colspan="5" style="text-align:center;color:var(--text-dim)">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="bulk-actions">
+    <button class="action-btn" onclick="copyAll()">📋 Copy All Credentials</button>
+    <button class="action-btn" onclick="downloadCSV()">⬇ Download CSV</button>
+  </div>
+</div>
+
+<script>
+  let labData = [];
+
+  async function loadCreds() {
+    try {
+      const res = await fetch('/api/admin/labs');
+      const data = await res.json();
+      labData = data.labs;
+      renderTable(data.labs);
+    } catch (e) {
+      document.getElementById('credTable').innerHTML =
+        '<tr><td colspan="5" style="color:var(--red)">Failed to load credentials</td></tr>';
+    }
+  }
+
+  function renderTable(labs) {
+    const tbody = document.getElementById('credTable');
+    tbody.innerHTML = labs.map(lab => `
+      <tr>
+        <td><strong>#${lab.id}</strong></td>
+        <td class="mono">${lab.user}</td>
+        <td>
+          <div class="pw-cell">
+            <span class="mono">${lab.password}</span>
+            <button class="copy-btn" onclick="copyPw(this, '${lab.password}')">Copy</button>
+          </div>
+        </td>
+        <td class="mono">${lab.path}</td>
+        <td>
+          <span class="status-dot ${lab.active ? 'active' : 'available'}"></span>
+          ${lab.active ? 'In Use' : 'Available'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function copyPw(btn, pw) {
+    navigator.clipboard.writeText(pw);
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 1500);
+  }
+
+  function copyAll() {
+    const host = window.location.origin;
+    const text = labData.map(l =>
+      `Lab ${l.id}: User=${l.user}  Password=${l.password}  URL=${host}${l.path}`
+    ).join('\n');
+    navigator.clipboard.writeText(text);
+    alert('All credentials copied to clipboard!');
+  }
+
+  function downloadCSV() {
+    const host = window.location.origin;
+    let csv = 'Lab,Username,Password,URL\n';
+    csv += labData.map(l =>
+      `${l.id},${l.user},${l.password},${host}${l.path}`
+    ).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'cyberhx-lab-credentials.csv';
+    a.click();
+  }
+
+  loadCreds();
+  setInterval(loadCreds, 15000);
+</script>
+</body>
+</html>

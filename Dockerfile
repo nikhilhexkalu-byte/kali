@@ -3,44 +3,54 @@ FROM kalilinux/kali-rolling
 ENV DEBIAN_FRONTEND=noninteractive \
     TERM=xterm-256color \
     LANG=C.UTF-8 \
-    TZ=Asia/Kolkata
+    TZ=Asia/Kolkata \
+    MAX_LABS=10 \
+    SESSION_TIMEOUT=900 \
+    ALLOWED_DOMAIN=cyberhx.com
 
-# Core pentest lab tools. Heavy suites (metasploit-framework, kali-tools-web) are
-# intentionally left out so the image builds and runs on small Render plans.
+# ── Core tools + lab infrastructure ──────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        # essentials
         ca-certificates curl wget git sudo vim nano tmux htop unzip less procps \
-        openssh-client iproute2 \
+        openssh-client iproute2 jq \
+        # python
         python3 python3-pip python3-venv \
+        # networking / recon
         net-tools iputils-ping traceroute dnsutils whois netcat-openbsd \
         nmap nikto sqlmap hydra john dirb gobuster whatweb wordlists \
-        ttyd \
+        # lab infrastructure
+        ttyd nginx-light tinyproxy iptables \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ( [ -f /usr/share/wordlists/rockyou.txt.gz ] && gunzip -kf /usr/share/wordlists/rockyou.txt.gz || true )
 
-# Normal (non-root) user for the lab. Has sudo for tools that need root
-# (e.g. `sudo nmap -sS`). Lab convenience: passwordless sudo.
-RUN useradd -m -u 1000 -s /bin/bash student \
-    && usermod -aG sudo student \
-    && echo 'student ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/student \
-    && chmod 0440 /etc/sudoers.d/student
+# ── Create lab users (lab1 … lab10) ──────────────────────────────
+RUN for i in $(seq 1 10); do \
+        useradd -m -s /bin/bash "lab${i}" && \
+        usermod -aG sudo "lab${i}" && \
+        echo "lab${i} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/lab${i}" && \
+        chmod 0440 "/etc/sudoers.d/lab${i}" ; \
+    done
 
-# Nicer shell for the student user
-RUN printf '%s\n' \
-      "export PS1='\\[\\e[1;32m\\]\\u@pentestlab\\[\\e[0m\\]:\\[\\e[1;34m\\]\\w\\[\\e[0m\\]\\$ '" \
-      "alias ll='ls -lah --color=auto'" \
-      "alias ls='ls --color=auto'" \
-      "echo 'PentestLab ready. Scan only systems you own or are authorised to test.'" \
-      >> /home/student/.bashrc \
-    && chown student:student /home/student/.bashrc
+# ── Per-user shell config (prompt, proxy, banner) ────────────────
+COPY setup-bashrc.sh /tmp/setup-bashrc.sh
+RUN chmod +x /tmp/setup-bashrc.sh && /tmp/setup-bashrc.sh && rm /tmp/setup-bashrc.sh
 
-COPY start.sh /start.sh
-# strip Windows line endings (if any) and make executable
-RUN sed -i 's/\r$//' /start.sh && chmod +x /start.sh
+# ── Copy lab scripts & configs ───────────────────────────────────
+COPY start.sh            /start.sh
+COPY session-manager.sh  /session-manager.sh
+COPY lab-shell.sh        /usr/local/bin/lab-shell.sh
+COPY nginx.conf.template /etc/nginx/nginx.conf.template
+COPY tinyproxy.conf      /etc/tinyproxy/tinyproxy.conf
+COPY filter.txt          /etc/tinyproxy/filter.txt
+COPY landing/            /var/www/landing/
 
-WORKDIR /home/student
+RUN sed -i 's/\r$//' /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh \
+    && chmod +x /start.sh /session-manager.sh /usr/local/bin/lab-shell.sh
 
-# Render injects $PORT at runtime; start.sh listens on it
+WORKDIR /home
+
+# Render injects $PORT at runtime
 EXPOSE 10000
 
 CMD ["/start.sh"]

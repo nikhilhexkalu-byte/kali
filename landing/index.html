@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberHX — Pentest Lab</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --accent: #06b6d4;
+    --accent-glow: rgba(6,182,212,0.15);
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      linear-gradient(rgba(6,182,212,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(6,182,212,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .header h1 {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #e2e8f0 0%, #06b6d4 50%, #22c55e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .header p {
+    color: var(--text-dim);
+    font-size: 16px;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Stats bar */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+    padding: 16px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* Lab grid */
+  .labs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .lab-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: all 0.2s ease;
+    cursor: default;
+  }
+
+  .lab-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--accent-glow);
+    transform: translateY(-2px);
+  }
+
+  .lab-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .lab-number {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .lab-status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .lab-status.available {
+    background: rgba(34,197,94,0.1);
+    color: var(--green);
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+
+  .lab-status.active {
+    background: rgba(245,158,11,0.1);
+    color: var(--orange);
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+
+  .lab-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .lab-info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .lab-info-label { color: var(--text-dim); }
+  .lab-info-value { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+
+  .lab-timer {
+    font-size: 12px;
+    color: var(--orange);
+    text-align: center;
+    padding: 6px;
+    background: rgba(245,158,11,0.05);
+    border-radius: 6px;
+    display: none;
+  }
+
+  .lab-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--accent), #0891b2);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .lab-btn:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+  }
+
+  .lab-btn.disabled {
+    background: var(--border);
+    color: var(--text-dim);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 24px 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* Sandbox notice */
+  .sandbox-notice {
+    background: rgba(6,182,212,0.05);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+  }
+
+  .sandbox-notice .icon { font-size: 20px; }
+
+  /* Pulse animation for active labs */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .lab-status.active::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--orange);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 1.5s infinite;
+  }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 28px; }
+    .stats { gap: 12px; }
+    .labs { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="logo">CyberHX</div>
+    <h1>Pentest Lab</h1>
+    <p>Sandboxed Kali Linux terminals for hands-on security training. Each session runs for 15 minutes in an isolated environment.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value" id="totalLabs">—</div>
+      <div class="stat-label">Total Labs</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="availableLabs">—</div>
+      <div class="stat-label">Available</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="activeLabs">—</div>
+      <div class="stat-label">In Use</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">15m</div>
+      <div class="stat-label">Session Time</div>
+    </div>
+  </div>
+
+  <div class="sandbox-notice">
+    <span class="icon">🔒</span>
+    <span><strong>Sandbox Mode</strong> — Network access is restricted to <code>*.cyberhx.com</code> only. All other domains are blocked.</span>
+  </div>
+
+  <div class="labs" id="labGrid">
+    <!-- Populated by JS -->
+  </div>
+
+  <div class="footer">
+    <p>Powered by <a href="https://cyberhx.com" target="_blank">CyberHX</a> &middot; Kali Linux &middot; Only scan systems you are authorized to test.</p>
+  </div>
+
+</div>
+
+<script>
+  async function loadLabs() {
+    try {
+      const res = await fetch('/api/labs');
+      const data = await res.json();
+      renderLabs(data.labs);
+    } catch (e) {
+      document.getElementById('labGrid').innerHTML =
+        '<p style="color:var(--text-dim);text-align:center;grid-column:1/-1">Loading labs...</p>';
+    }
+  }
+
+  function formatTime(seconds) {
+    if (!seconds || seconds <= 0) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function renderLabs(labs) {
+    const grid = document.getElementById('labGrid');
+    let totalCount = labs.length;
+    let activeCount = labs.filter(l => l.active).length;
+    let availCount = totalCount - activeCount;
+
+    document.getElementById('totalLabs').textContent = totalCount;
+    document.getElementById('availableLabs').textContent = availCount;
+    document.getElementById('activeLabs').textContent = activeCount;
+
+    grid.innerHTML = labs.map(lab => `
+      <div class="lab-card">
+        <div class="lab-top">
+          <span class="lab-number">Lab #${lab.id}</span>
+          <span class="lab-status ${lab.active ? 'active' : 'available'}">
+            ${lab.active ? 'In Use' : 'Available'}
+          </span>
+        </div>
+        <div class="lab-info">
+          <div class="lab-info-row">
+            <span class="lab-info-label">User</span>
+            <span class="lab-info-value">${lab.user}</span>
+          </div>
+          <div class="lab-info-row">
+            <span class="lab-info-label">Path</span>
+            <span class="lab-info-value">${lab.path}</span>
+          </div>
+        </div>
+        ${lab.active && lab.timeLeft !== undefined
+          ? `<div class="lab-timer" style="display:block">⏱ ${formatTime(lab.timeLeft)} remaining</div>`
+          : `<a href="${lab.path}" class="lab-btn" target="_blank">Enter Lab</a>`
+        }
+      </div>
+    `).join('');
+  }
+
+  loadLabs();
+  setInterval(loadLabs, 15000);
+</script>
+</body>
+</html>
