@@ -230,10 +230,13 @@ def provision_challenge(lab_num, challenge_id, flag):
     except subprocess.TimeoutExpired:
         return False, 'challenge provisioning timed out'
     if r.returncode != 0:
+        stdout_snip = r.stdout[:500].decode('utf-8', errors='replace') if isinstance(r.stdout, bytes) else str(r.stdout)[:500]
+        stderr_snip = r.stderr[:500].decode('utf-8', errors='replace') if isinstance(r.stderr, bytes) else str(r.stderr)[:500]
         print(f'[lab] provision.sh failed for {challenge_id}:')
-        print(f'[lab]   stdout: {r.stdout[:500]!r}')
-        print(f'[lab]   stderr: {r.stderr[:500]!r}')
-        return False, 'challenge provisioning failed'
+        print(f'[lab]   stdout: {stdout_snip!r}')
+        print(f'[lab]   stderr: {stderr_snip!r}')
+        detail = stderr_snip.strip() or stdout_snip.strip() or 'unknown'
+        return False, f'challenge provisioning failed: {detail[:200]}'
     return True, None
 
 
