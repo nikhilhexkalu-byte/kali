@@ -40,12 +40,17 @@ chmod 640 "$ROOT/lab.py"
 chown root:"${CHX_LAB_USER}" "$ROOT/lab.py"
 
 # ── Pre-create writable dirs for the service user ─────────────────
+# SQLite needs write access to the directory for journal/WAL files.
+mkdir -p "$ROOT/data"
+chown "www-chx${CHX_LAB_NUM}":"${CHX_LAB_USER}" "$ROOT/data"
+chmod 770 "$ROOT/data"
+touch "$ROOT/data/company.db"
+chown "www-chx${CHX_LAB_NUM}":"${CHX_LAB_USER}" "$ROOT/data/company.db"
+chmod 660 "$ROOT/data/company.db"
+
 mkdir -p "$ROOT/backup"
 chown "www-chx${CHX_LAB_NUM}":"${CHX_LAB_USER}" "$ROOT/backup"
-chmod 750 "$ROOT/backup"
-touch "$ROOT/company.db"
-chown "www-chx${CHX_LAB_NUM}":"${CHX_LAB_USER}" "$ROOT/company.db"
-chmod 660 "$ROOT/company.db"
+chmod 770 "$ROOT/backup"
 
 # ── Start the lab network as the per-slot service user (NOT root) ─
 # CHX_FLAG is NOT passed: the flag is only in flag.txt (needs SUID).

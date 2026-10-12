@@ -23,7 +23,7 @@ SLOT = int(os.environ.get('CHX_LAB_NUM', '1'))
 NET = f'127.10.{SLOT}'
 SVC_PORT = int(os.environ.get('SVC_PORT', '8080'))
 
-DB_PATH = f'/srv/challenge/lab{SLOT}/company.db'
+DB_PATH = f'/srv/challenge/lab{SLOT}/data/company.db'
 BACKUP_DIR = f'/srv/challenge/lab{SLOT}/backup'
 
 CORP_CREDS = {'jsmith': 'Summer2024!', 'admin': 'Pr0dAdmin#1'}
