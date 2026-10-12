@@ -236,7 +236,7 @@ def provision_challenge(lab_num, challenge_id, flag):
         print(f'[lab]   stdout: {stdout_snip!r}')
         print(f'[lab]   stderr: {stderr_snip!r}')
         detail = stderr_snip.strip() or stdout_snip.strip() or 'unknown'
-        return False, f'challenge provisioning failed: {detail[:200]}'
+        return False, f'challenge provisioning failed: {detail[:800]}'
     return True, None
 
 
