@@ -20,8 +20,8 @@ import hashlib
 import base64
 
 SLOT = int(os.environ.get('CHX_LAB_NUM', '1'))
-FLAG = os.environ.get('CHX_FLAG', 'CHX{test_flag}')
 NET = f'127.10.{SLOT}'
+SVC_PORT = int(os.environ.get('SVC_PORT', '8080'))
 
 DB_PATH = f'/srv/challenge/lab{SLOT}/company.db'
 BACKUP_DIR = f'/srv/challenge/lab{SLOT}/backup'
@@ -110,11 +110,11 @@ Host api-internal
     with open(f'{BACKUP_DIR}/network_map.txt', 'w') as f:
         f.write(f"""AcmeCorp Internal Network Map
 =============================
-{NET}.10  - Corporate Web Portal (Apache 2.4.54)
-{NET}.11  - File Server (nginx 1.24.0)
-{NET}.12  - Database Admin Panel (Adminer 4.8.1)
-{NET}.13  - Internal REST API (Node.js 18.x)
-{NET}.14  - Admin Dashboard (CyberHX Admin v2.1.0)
+{NET}.10:{SVC_PORT}    - Corporate Web Portal (Apache 2.4.54)
+{NET}.11:{SVC_PORT+1}  - File Server (nginx 1.24.0)
+{NET}.12:{SVC_PORT+2}  - Database Admin Panel (Adminer 4.8.1)
+{NET}.13:{SVC_PORT+3}  - Internal REST API (Node.js 18.x)
+{NET}.14:{SVC_PORT+4}  - Admin Dashboard (CyberHX Admin v2.1.0)
 
 Gateway: {NET}.1
 DNS: {NET}.1
@@ -482,11 +482,11 @@ def main():
     create_backup_files()
 
     services = [
-        (f'{NET}.10', 80, CorporateWebHandler, 'Corporate Web Portal'),
-        (f'{NET}.11', 80, FileServerHandler, 'File Server'),
-        (f'{NET}.12', 80, DatabaseAdminHandler, 'Database Admin'),
-        (f'{NET}.13', 80, InternalApiHandler, 'Internal API'),
-        (f'{NET}.14', 80, AdminDashboardHandler, 'Admin Dashboard'),
+        (f'{NET}.10', SVC_PORT, CorporateWebHandler, 'Corporate Web Portal'),
+        (f'{NET}.11', SVC_PORT + 1, FileServerHandler, 'File Server'),
+        (f'{NET}.12', SVC_PORT + 2, DatabaseAdminHandler, 'Database Admin'),
+        (f'{NET}.13', SVC_PORT + 3, InternalApiHandler, 'Internal API'),
+        (f'{NET}.14', SVC_PORT + 4, AdminDashboardHandler, 'Admin Dashboard'),
     ]
 
     for ip, port, handler, name in services:
