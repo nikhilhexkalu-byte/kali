@@ -49,14 +49,23 @@ chmod 660 "$ROOT/company.db"
 
 # ── Start the lab network as the per-slot service user (NOT root) ─
 # CHX_FLAG is NOT passed: the flag is only in flag.txt (needs SUID).
-SVC_PORT=$((8080 + (CHX_LAB_NUM - 1) * 10)) \
-  nohup runuser -u "www-chx${CHX_LAB_NUM}" -- env \
-    CHX_LAB_NUM="$CHX_LAB_NUM" \
-    SVC_PORT="$((8080 + (CHX_LAB_NUM - 1) * 10))" \
-    python3 "$ROOT/lab.py" > /dev/null 2>&1 &
+LAB_LOG="/tmp/lab-${CHX_LAB_NUM}.log"
+SVC_PORT=$((8080 + (CHX_LAB_NUM - 1) * 10))
+
+nohup runuser -u "www-chx${CHX_LAB_NUM}" -- env \
+  CHX_LAB_NUM="$CHX_LAB_NUM" \
+  SVC_PORT="$SVC_PORT" \
+  python3 "$ROOT/lab.py" > "$LAB_LOG" 2>&1 &
+LAB_PID=$!
+
+sleep 2
+if ! kill -0 "$LAB_PID" 2>/dev/null; then
+  echo "FATAL: lab.py died on startup. Log:" >&2
+  cat "$LAB_LOG" >&2
+  exit 1
+fi
 
 # ── Drop the mission brief in the lab user's home ─────────────────
-SVC_PORT=$((8080 + (CHX_LAB_NUM - 1) * 10))
 cat > "${CHX_LAB_HOME}/README.txt" << EOF
 ╔══════════════════════════════════════════════════════════════╗
 ║              CPPT FINAL PRACTICAL EXAM                       ║
