@@ -14,15 +14,22 @@ PORT=$((8000 + CHX_LAB_NUM))
 ROOT="/srv/challenge/${CHX_LAB_USER}"
 NET="127.10.${CHX_LAB_NUM}"
 CHALLENGE_DIR="$(dirname "$0")"
+SVC="www-chx${CHX_LAB_NUM}"
 
 rm -rf "$ROOT"; mkdir -p "$ROOT"
 
 # ── Per-slot service user ─────────────────────────────────────────
-useradd -r -s /usr/sbin/nologin "www-chx${CHX_LAB_NUM}" 2>/dev/null || true
-usermod -aG "${CHX_LAB_USER}" "www-chx${CHX_LAB_NUM}" 2>/dev/null || true
+# Everything under $ROOT belongs to root and this service user only. The
+# candidate's own account must have no filesystem path into the challenge:
+# the exam IS the chain that lands a shell as $SVC, and only from there does
+# the SUID binary below lead to root and the flag. Granting $SVC membership
+# of the candidate's group (or the reverse) would hand away the whole exam.
+useradd -r -s /usr/sbin/nologin "$SVC" 2>/dev/null || true
+getent group "$SVC" >/dev/null 2>&1 || groupadd -r "$SVC"
+usermod -aG "$SVC" "$SVC" 2>/dev/null || true
 
 # ── Restrict challenge directory ──────────────────────────────────
-chown root:"${CHX_LAB_USER}" "$ROOT"
+chown root:"$SVC" "$ROOT"
 chmod 750 "$ROOT"
 
 # ── Plant the flag (root-only, needs SUID privesc to read) ────────
@@ -31,33 +38,33 @@ printf '%s\n' "$CHX_FLAG" > "$ROOT/flag.txt"
 
 # ── SUID binary for privilege escalation (per-slot isolated) ──────
 cp /usr/bin/find "$ROOT/finder"
-chown root:"${CHX_LAB_USER}" "$ROOT/finder"
+chown root:"$SVC" "$ROOT/finder"
 chmod 4750 "$ROOT/finder"
 
 # ── Copy lab network script ───────────────────────────────────────
 cp "${CHALLENGE_DIR}/lab.py" "$ROOT/lab.py"
 chmod 640 "$ROOT/lab.py"
-chown root:"${CHX_LAB_USER}" "$ROOT/lab.py"
+chown root:"$SVC" "$ROOT/lab.py"
 
 # ── Pre-create writable dirs for the service user ─────────────────
 # SQLite needs write access to the directory for journal/WAL files.
 mkdir -p "$ROOT/data"
-chown "www-chx${CHX_LAB_NUM}":"${CHX_LAB_USER}" "$ROOT/data"
-chmod 770 "$ROOT/data"
+chown "$SVC":"$SVC" "$ROOT/data"
+chmod 700 "$ROOT/data"
 touch "$ROOT/data/company.db"
-chown "www-chx${CHX_LAB_NUM}":"${CHX_LAB_USER}" "$ROOT/data/company.db"
-chmod 660 "$ROOT/data/company.db"
+chown "$SVC":"$SVC" "$ROOT/data/company.db"
+chmod 600 "$ROOT/data/company.db"
 
 mkdir -p "$ROOT/backup"
-chown "www-chx${CHX_LAB_NUM}":"${CHX_LAB_USER}" "$ROOT/backup"
-chmod 770 "$ROOT/backup"
+chown "$SVC":"$SVC" "$ROOT/backup"
+chmod 700 "$ROOT/backup"
 
 # ── Start the lab network as the per-slot service user (NOT root) ─
 # CHX_FLAG is NOT passed: the flag is only in flag.txt (needs SUID).
 LAB_LOG="/tmp/lab-${CHX_LAB_NUM}.log"
 SVC_PORT=$((8080 + (CHX_LAB_NUM - 1) * 10))
 
-nohup runuser -u "www-chx${CHX_LAB_NUM}" -- env \
+nohup runuser -u "$SVC" -- env \
   CHX_LAB_NUM="$CHX_LAB_NUM" \
   SVC_PORT="$SVC_PORT" \
   python3 "$ROOT/lab.py" > "$LAB_LOG" 2>&1 &

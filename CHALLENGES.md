@@ -116,3 +116,22 @@ exit 0
   challenge for well under that, or nobody passes.
 * **Test both scripts twice in a row.** Teardown then provision again must
   leave a clean target — slots get reused all day.
+
+### Permissions: the candidate's own account gets nothing
+
+`CHX_LAB_USER` is the account the candidate's terminal runs as. It must have **no**
+filesystem path into the challenge — the exam is the chain, and anything the
+candidate can simply read or execute is a shortcut around it:
+
+- Own `/srv/challenge/<user>` and everything in it `root` or the per-slot service
+  user, never `CHX_LAB_USER`, and never put `CHX_LAB_USER` in the service user's
+  group (or the service user in the candidate's group).
+- A SUID helper must be mode `4750` owned `root:<service-user>`, so only a shell
+  obtained through the challenge can run it. `4750 root:<candidate>` hands over
+  root in one command.
+- The challenge source and its database are the answer key (credentials, record
+  counts, versions). Keep them `640`/`600` away from the candidate's group.
+- `chown` clears the SUID bit, so always `chown` before `chmod 4750`.
+- Verify it: as `CHX_LAB_USER`, `ls`, `cat` the source, read the database and run
+  the SUID helper. Every one of those must fail. Then, as the service user, run
+  the helper and read the flag — that must succeed.
