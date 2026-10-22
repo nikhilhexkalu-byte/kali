@@ -1,0 +1,65 @@
+#!/bin/bash
+# /opt/challenges/capt-day05/provision.sh
+# CAPT Day 05: Command Injection
+set -euo pipefail
+
+PORT=$((8100 + (CHX_LAB_NUM - 1) * 10))
+ROOT="/srv/challenge/${CHX_LAB_USER}"
+NET="127.20.${CHX_LAB_NUM}"
+CHALLENGE_DIR="$(dirname "$0")"
+SVC="web-chx${CHX_LAB_NUM}"
+
+rm -rf "$ROOT"; mkdir -p "$ROOT"
+
+useradd -r -s /usr/sbin/nologin "$SVC" 2>/dev/null || true
+
+# Plant the flag (root-only)
+install -o root -g root -m 600 /dev/null "$ROOT/flag.txt"
+printf '%s\n' "$CHX_FLAG" > "$ROOT/flag.txt"
+
+# Copy lab script
+cp "${CHALLENGE_DIR}/lab.py" "$ROOT/lab.py"
+chmod 640 "$ROOT/lab.py"
+chown root:"$SVC" "$ROOT/lab.py"
+
+
+# Writable dir for service
+mkdir -p "$ROOT/data"
+chown "$SVC":"$SVC" "$ROOT/data"
+chmod 700 "$ROOT/data"
+# Make flag readable by the service (command injection reads it)
+chown root:"$SVC" "$ROOT/flag.txt"
+chmod 640 "$ROOT/flag.txt"
+
+
+# Start the lab
+nohup runuser -u "$SVC" -- env \
+  CHX_LAB_NUM="$CHX_LAB_NUM" \
+  SVC_PORT="$PORT" \
+  CHX_FLAG="$CHX_FLAG" \
+  python3 "$ROOT/lab.py" > "/tmp/lab-${CHX_LAB_NUM}.log" 2>&1 &
+LAB_PID=$!
+
+sleep 2
+if ! kill -0 "$LAB_PID" 2>/dev/null; then
+  echo "FATAL: lab.py died on startup. Log:" >&2
+  cat "/tmp/lab-${CHX_LAB_NUM}.log" >&2
+  exit 1
+fi
+
+cat > "${CHX_LAB_HOME}/README.txt" << EOF
+╔══════════════════════════════════════════════════════════════╗
+║              CAPT DAY 05: Command Injection
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║  Target: http://${NET}.10:${PORT}                          ║
+║                                                              ║
+║  Exploit the diagnostic tool to read system files.
+║                                                              ║
+║  Flag format: CHX{...}                                       ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+EOF
+chown "${CHX_LAB_USER}:${CHX_LAB_USER}" "${CHX_LAB_HOME}/README.txt"
+
+echo "provisioned ${CHX_LAB_USER} — day05 on ${NET}.10:${PORT}"
