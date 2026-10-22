@@ -24,7 +24,7 @@ class H(http.server.BaseHTTPRequestHandler):
             else:
                 self._404()
         elif p == '/.env':
-            self._text(f'DB_HOST=localhost\nDB_USER=root\nDB_PASS=r00tP@ss!\nSECRET_KEY=sk_live_a8f3b2\nADMIN_EMAIL=admin@corp.local')
+            self._text(f'DB_HOST=localhost\nDB_USER=root\nDB_PASS=r00tP@ss!\nSECRET_KEY=dvault_a8f3b2\nADMIN_EMAIL=admin@corp.local')
         elif p == '/admin-panel':
             self._html('<h1>Admin Login</h1><form method="POST" action="/admin-panel"><input name="user" placeholder="Username"><input name="pass" type="password"><button>Login</button></form>')
         elif p == '/debug':
