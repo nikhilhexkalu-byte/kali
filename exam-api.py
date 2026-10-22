@@ -39,7 +39,7 @@ API_TOKEN_FILE = '/tmp/.api-token'
 LEASE_SECRET_FILE = '/tmp/.lease-secret'
 
 # Lease API limits
-MAX_LEASE_SECONDS = int(os.environ.get('MAX_LEASE_SECONDS', '7200'))
+MAX_LEASE_SECONDS = int(os.environ.get('MAX_LEASE_SECONDS', '21600'))
 CLOCK_SKEW_SECONDS = 300
 NONCE_TTL = CLOCK_SKEW_SECONDS * 2
 

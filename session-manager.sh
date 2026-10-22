@@ -19,11 +19,17 @@ while true; do
     LAB_USER="lab${i}"
 
     if [ -f "$SESSION_FILE" ]; then
-      START=$(cat "$SESSION_FILE" 2>/dev/null || echo "0")
-      ELAPSED=$((NOW - START))
+      END_TIME_FILE="/tmp/.lab-end-time-${i}"
+      if [ -f "$END_TIME_FILE" ]; then
+        DEADLINE=$(cat "$END_TIME_FILE" 2>/dev/null || echo "0")
+        EXPIRED=$(( NOW >= DEADLINE + 30 ))
+      else
+        START=$(cat "$SESSION_FILE" 2>/dev/null || echo "0")
+        EXPIRED=$(( (NOW - START) >= (SESSION_TIMEOUT + 30) ))
+      fi
 
-      if [ "$ELAPSED" -ge "$((SESSION_TIMEOUT + 30))" ]; then
-        echo "[session-mgr] Lab ${i}: session expired (${ELAPSED}s) — cleaning up"
+      if [ "$EXPIRED" -eq 1 ]; then
+        echo "[session-mgr] Lab ${i}: session expired — cleaning up"
 
         /usr/local/bin/lab-cleanup.sh "$i"
 
@@ -43,8 +49,14 @@ while true; do
     TIME_LEFT=""
     if [ -f "$SESSION_FILE" ]; then
       IS_ACTIVE="true"
-      START=$(cat "$SESSION_FILE" 2>/dev/null || echo "$NOW")
-      REMAINING=$((SESSION_TIMEOUT - (NOW - START)))
+      END_TIME_FILE="/tmp/.lab-end-time-${i}"
+      if [ -f "$END_TIME_FILE" ]; then
+        DEADLINE=$(cat "$END_TIME_FILE" 2>/dev/null || echo "$NOW")
+        REMAINING=$((DEADLINE - NOW))
+      else
+        START=$(cat "$SESSION_FILE" 2>/dev/null || echo "$NOW")
+        REMAINING=$((SESSION_TIMEOUT - (NOW - START)))
+      fi
       [ "$REMAINING" -lt 0 ] && REMAINING=0
       TIME_LEFT="\"timeLeft\":${REMAINING},"
     fi

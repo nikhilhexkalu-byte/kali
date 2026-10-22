@@ -4,7 +4,7 @@ set -e
 # ── Config ───────────────────────────────────────────────────────
 PORT="${PORT:-10000}"
 MAX_LABS="${MAX_LABS:-6}"
-SESSION_TIMEOUT="${SESSION_TIMEOUT:-900}"
+SESSION_TIMEOUT="${SESSION_TIMEOUT:-3600}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 ALLOWED_DOMAIN="${ALLOWED_DOMAIN:-cyberhx.com}"
 CREDS_FILE="/tmp/lab-credentials.json"
