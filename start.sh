@@ -170,8 +170,8 @@ for i in $(seq 1 "$MAX_LABS"); do
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
+        proxy_read_timeout 7200s;
+        proxy_send_timeout 7200s;
     }
 
 LOCEOF
