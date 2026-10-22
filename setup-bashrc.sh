@@ -32,16 +32,29 @@ export NO_PROXY="$no_proxy"
 readonly http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY 2>/dev/null
 
 clear
+_lab_num="${USER#lab}"
+_end_file="/tmp/.lab-end-time-${_lab_num}"
+if [ -f "$_end_file" ] 2>/dev/null; then
+  _end=$(cat "$_end_file" 2>/dev/null || echo 0)
+  _left=$(( _end - $(date +%s) ))
+  [ "$_left" -lt 0 ] && _left=0
+  _h=$(( _left / 3600 )); _m=$(( (_left % 3600) / 60 ))
+  if [ "$_h" -gt 0 ]; then _time="${_h}h ${_m}m remaining"
+  else _time="${_m}m remaining"; fi
+else
+  _time="${SESSION_TIMEOUT:-3600}s session"
+fi
 echo ""
 echo -e "  \e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
 echo -e "   \e[1;36mCYBERHX\e[0m \e[0;90m//\e[0m \e[0;37mPentestLab\e[0m"
 echo -e "  \e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-echo -e "   \e[0;90mSession\e[0m \e[0;36m:\e[0m \e[0;31m15 min timeout\e[0m"
+echo -e "   \e[0;90mSession\e[0m \e[0;36m:\e[0m \e[0;33m${_time}\e[0m"
 echo -e "   \e[0;90mNetwork\e[0m \e[0;36m:\e[0m \e[0;33msandboxed · *.cyberhx.com\e[0m"
 echo -e "   \e[0;90mTools\e[0m   \e[0;36m:\e[0m \e[0;37mnmap, nikto, sqlmap, hydra, gobuster\e[0m"
 echo -e "  \e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
 echo -e "   \e[0;90mOnly test systems you have permission for.\e[0m"
 echo ""
+unset _lab_num _end_file _end _left _h _m _time
 BASHRC
   chown "lab${i}:lab${i}" "/home/lab${i}/.bashrc"
   [ "$i" -eq 1 ] && cp "/home/lab1/.bashrc" /etc/cyberhx/clean-bashrc
