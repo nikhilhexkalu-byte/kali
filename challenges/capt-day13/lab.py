@@ -1,87 +1,79 @@
 #!/usr/bin/env python3
-"""CAPT Day 13: Vulnerability Chaining — info leak + SSRF + cmd injection = flag."""
-import os, subprocess, urllib.request
-from aiohttp import web
+"""CAPT Day 13: Vulnerability Chaining — SSRF → debug token → command exec."""
+import http.server, os, json, html, hashlib, threading
+from urllib.parse import parse_qs, urlparse
+import urllib.request
 
-FLAG = os.environ["CHX_FLAG"]
-PORT = int(os.environ["SVC_PORT"])
-INTERNAL_PORT = PORT + 1
-SLOT = int(os.environ["CHX_LAB_NUM"])
-BIND = f"127.20.{SLOT}.10"
-ROOT = f"/srv/challenge/{os.environ.get('CHX_LAB_USER', 'test')}"
+FLAG = os.environ.get('CHX_FLAG', 'CHX{default}')
+PORT = int(os.environ.get('SVC_PORT', '8080'))
+DEBUG_TOKEN = hashlib.sha256(('debug-' + FLAG).encode()).hexdigest()[:32]
 
-# --- PUBLIC APP (PORT) ---
-HOME = """<!DOCTYPE html><html><head><title>CloudOps Dashboard</title></head>
-<body><h1>CloudOps Dashboard</h1>
-<ul><li><a href="/status">System Status</a></li>
-<li><a href="/health-check">Health Check (URL Probe)</a></li></ul></body></html>"""
+# Internal admin API on 127.0.0.1:9998
+class InternalAdmin(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
+    def do_GET(self):
+        if self.path == '/admin-api/status':
+            self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers()
+            self.wfile.write(json.dumps({'status':'ok','debug_token': DEBUG_TOKEN,'hint':'Use this token at /debug?token=<token>&cmd=<cmd>'}).encode())
+        else:
+            self.send_response(404); self.end_headers(); self.wfile.write(b'not found')
 
-STATUS_PAGE = f"""<!DOCTYPE html><html><body>
-<h1>System Status</h1>
-<pre>App Version: 4.2.1
-Environment: production
-Internal API: http://{BIND}:{INTERNAL_PORT}
-Build: 2026-10-15
-Debug: disabled</pre></body></html>"""
+class H(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
+    def do_GET(self):
+        p = urlparse(self.path)
+        path, qs = p.path.rstrip('/') or '/', parse_qs(p.query)
+        if path == '/':
+            self._html('<h1>Enterprise Portal</h1><p>Internal tools and services.</p><ul><li><a href="/proxy">URL Proxy</a> — fetch internal resources</li><li><a href="/debug">Debug Console</a> — requires token</li></ul>')
+        elif path == '/proxy':
+            url = qs.get('url', [''])[0]
+            if not url:
+                self._html('<h1>URL Proxy</h1><form action="/proxy"><input name="url" placeholder="Internal URL" style="width:400px"><button>Fetch</button></form><p>Access internal services through the proxy.</p>')
+                return
+            # Step 1: SSRF — no meaningful blocklist
+            try:
+                resp = urllib.request.urlopen(url, timeout=5)
+                data = resp.read(8192).decode('utf-8', errors='replace')
+                self._html(f'<h1>Proxy Response</h1><pre>{html.escape(data)}</pre><a href="/proxy">Back</a>')
+            except Exception as e:
+                self._html(f'<h1>Proxy Error</h1><pre>{html.escape(str(e))}</pre><a href="/proxy">Back</a>')
+        elif path == '/debug':
+            token = qs.get('token', [''])[0]
+            cmd = qs.get('cmd', [''])[0]
+            if not token:
+                self._html('<h1>Debug Console</h1><p>Authentication required. Provide a valid debug token.</p><form action="/debug"><input name="token" placeholder="Debug token"><input name="cmd" placeholder="Command"><button>Execute</button></form>')
+                return
+            # Step 3: command exec with valid token
+            if token != DEBUG_TOKEN:
+                self.send_response(403); self.send_header('Content-Type','text/html'); self.end_headers()
+                self.wfile.write(b'<h1>403 Forbidden</h1><p>Invalid debug token.</p>')
+                return
+            if not cmd:
+                self._html('<h1>Debug Console</h1><p>Token valid. Enter a command.</p><form action="/debug"><input type="hidden" name="token" value="' + html.escape(token) + '"><input name="cmd" placeholder="Command"><button>Execute</button></form>')
+                return
+            # Simulated command exec
+            if 'flag' in cmd.lower():
+                output = FLAG
+            elif cmd == 'id':
+                output = 'uid=0(root) gid=0(root)'
+            elif cmd == 'whoami':
+                output = 'root'
+            elif cmd.startswith('ls'):
+                output = 'app.py\nconfig.json\nflag.txt\ndata/'
+            else:
+                output = f'(executed: {cmd})'
+            self._html(f'<h1>Debug Output</h1><pre>$ {html.escape(cmd)}\n{html.escape(output)}</pre><form action="/debug"><input type="hidden" name="token" value="{html.escape(token)}"><input name="cmd"><button>Run</button></form>')
+        elif path == '/admin-api' or path == '/admin-api/status':
+            self.send_response(403); self.send_header('Content-Type','text/html'); self.end_headers()
+            self.wfile.write(b'<h1>403</h1><p>Admin API is internal only. Access via 127.0.0.1:9998.</p>')
+        else:
+            self.send_response(404); self.end_headers(); self.wfile.write(b'404')
+    def _html(self, b):
+        self.send_response(200); self.send_header('Content-Type','text/html'); self.end_headers(); self.wfile.write(b.encode())
 
-HEALTH_FORM = """<!DOCTYPE html><html><body>
-<h1>Health Check — URL Probe</h1>
-<form method="POST" action="/health-check">
-<input name="url" placeholder="URL to probe" size="60"><br><br>
-<button type="submit">Check</button></form></body></html>"""
+def start_internal():
+    http.server.HTTPServer(('127.0.0.1', 9998), InternalAdmin).serve_forever()
 
-async def index(r): return web.Response(text=HOME, content_type="text/html")
-async def status(r): return web.Response(text=STATUS_PAGE, content_type="text/html")
-async def health_form(r): return web.Response(text=HEALTH_FORM, content_type="text/html")
-
-async def health_check(r):
-    data = await r.post()
-    url = data.get("url", "").strip()
-    if not url:
-        return web.Response(text="<h1>No URL</h1>", content_type="text/html")
-    try:
-        resp = urllib.request.urlopen(url, timeout=5)
-        body = resp.read().decode("utf-8", errors="replace")[:4096]
-    except Exception as e:
-        body = f"Error: {e}"
-    return web.Response(text=f"<h1>Health Check</h1><pre>{body}</pre>", content_type="text/html")
-
-# --- INTERNAL APP (PORT+1) ---
-INTERNAL_HOME = """<!DOCTYPE html><html><body>
-<h1>Internal Admin API</h1>
-<ul><li>GET /admin/run?cmd=&lt;command&gt;</li>
-<li>GET /admin/info</li></ul></body></html>"""
-
-async def internal_index(r): return web.Response(text=INTERNAL_HOME, content_type="text/html")
-async def internal_info(r):
-    return web.json_response({"internal": True, "services": ["db", "cache", "queue"], "hint": "Try /admin/run?cmd=cat+flag.txt"})
-
-async def internal_run(r):
-    cmd = r.query.get("cmd", "")
-    if not cmd:
-        return web.Response(text="Missing cmd parameter")
-    try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=5,
-                                cwd=ROOT, env={**os.environ})
-        return web.Response(text=result.stdout + result.stderr)
-    except Exception as e:
-        return web.Response(text=f"Error: {e}")
-
-async def start_internal(app_):
-    internal = web.Application()
-    internal.router.add_get("/", internal_index)
-    internal.router.add_get("/admin/info", internal_info)
-    internal.router.add_get("/admin/run", internal_run)
-    runner = web.AppRunner(internal)
-    await runner.setup()
-    await web.TCPSite(runner, BIND, INTERNAL_PORT).start()
-
-app = web.Application()
-app.router.add_get("/", index)
-app.router.add_get("/status", status)
-app.router.add_get("/health-check", health_form)
-app.router.add_post("/health-check", health_check)
-app.on_startup.append(start_internal)
-
-if __name__ == "__main__":
-    web.run_app(app, host=BIND, port=PORT, print=lambda *a: None)
+if __name__ == '__main__':
+    threading.Thread(target=start_internal, daemon=True).start()
+    http.server.HTTPServer(('0.0.0.0', PORT), H).serve_forever()
