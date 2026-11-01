@@ -1,8 +1,5 @@
 # CyberHX Pentest Lab
 
-![Uptime Robot Status](https://img.shields.io/uptimerobot/status/u3905120-86063581e84da3549d79424a?style=for-the-badge&label=Lab%20Status)
-![Uptime Robot Ratio (30 days)](https://img.shields.io/uptimerobot/ratio/30/u3905120-86063581e84da3549d79424a?style=for-the-badge&label=Uptime%2030d)
-
 Multi-user sandboxed Kali Linux lab with browser-based terminals. Built for security training on [Render](https://render.com) free plan.
 
 Two ways in:
