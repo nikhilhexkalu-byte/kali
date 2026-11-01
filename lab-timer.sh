@@ -12,5 +12,5 @@ if [ "$1" = "--plain" ]; then
 elif [ "$left" -le 300 ]; then
   printf '#[bg=red,fg=white,bold] TIME LEFT %s #[default]' "$t"
 else
-  printf '#[fg=black,bold] TIME LEFT %s #[default]' "$t"
+  printf '#[fg=black] TIME LEFT %s #[default]' "$t"
 fi

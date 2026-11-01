@@ -156,6 +156,45 @@
   }
   .term-error a:hover { background: rgba(0, 255, 65, 0.08); }
 
+  /* ── Second-tab notice ──────────────────────────── */
+  .peek {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: calc(100% - 28px);
+    padding: 10px 12px 10px 16px;
+    background: rgba(12, 12, 12, 0.96);
+    border: 1px solid var(--glow);
+    border-radius: 10px;
+    box-shadow: 0 0 24px rgba(0, 255, 65, 0.25), 0 10px 30px rgba(0, 0, 0, 0.6);
+    color: #e0e0e0;
+    font-size: 13px;
+    line-height: 1.4;
+    transform: translate(-50%, -12px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .peek.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .peek .eyes { font-size: 18px; flex-shrink: 0; }
+  .peek b { color: var(--glow); }
+  .peek button {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid rgba(0, 255, 65, 0.4);
+    border-radius: 6px;
+    color: var(--glow);
+    font: inherit;
+    font-size: 12px;
+    padding: 2px 8px;
+    cursor: pointer;
+  }
+  .peek button:hover { background: rgba(0, 255, 65, 0.1); }
+
   @media (max-width: 480px) {
     .stage { padding: 6px; }
     .window { border-radius: 10px; }
@@ -189,6 +228,11 @@
       <div class="title-spacer"><span class="timer" id="timer" hidden title="Time left in this lab session"></span></div>
     </div>
     <div class="term-wrap">
+      <div class="peek" id="peek" role="status" aria-live="polite">
+        <span class="eyes" aria-hidden="true">&#x1F440;</span>
+        <span><b>We know you opened something…</b> but we&rsquo;re not saying anything.</span>
+        <button type="button" id="peekClose" aria-label="Dismiss">OK</button>
+      </div>
       <iframe id="term" src="about:blank" allowfullscreen title="Lab terminal"></iframe>
       <div class="term-error" id="termErr">
         <div class="err-code">--</div>
@@ -253,6 +297,27 @@
       timerEl.textContent = '\u23F1 ' + (m[1] || '') + m[3] + ':' + m[4];
       timerEl.classList.toggle('low', secs <= 300);
       timerEl.hidden = false;
+    } catch (e) {}
+  }, 1000);
+
+  // ── Same lab open in more than one tab/device ───────────────
+  // tmux appends "TABS <n>" (attached clients) to the terminal title.
+  var peek = document.getElementById('peek');
+  var peekDismissedAt = 0, lastTabs = 1;
+  document.getElementById('peekClose').addEventListener('click', function() {
+    peekDismissedAt = lastTabs;
+    peek.classList.remove('show');
+  });
+  setInterval(function() {
+    try {
+      var t = (termFrame.contentDocument && termFrame.contentDocument.title) || '';
+      var m = t.match(/TABS (\d+)/);
+      if (!m) return;
+      var n = parseInt(m[1], 10);
+      if (n <= 1) peekDismissedAt = 0;          // back to one tab: re-arm
+      if (n > lastTabs && n > peekDismissedAt) peekDismissedAt = 0;  // another tab opened
+      lastTabs = n;
+      peek.classList.toggle('show', n > 1 && peekDismissedAt === 0);
     } catch (e) {}
   }, 1000);
 
