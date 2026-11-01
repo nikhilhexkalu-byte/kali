@@ -89,7 +89,20 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .title-spacer { width: 55px; flex-shrink: 0; }
+  .title-spacer { width: 55px; flex-shrink: 0; display: flex; justify-content: flex-end; }
+  .timer {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--glow);
+    border: 1px solid rgba(0, 255, 65, 0.45);
+    border-radius: 6px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+  }
+  .timer.low { color: #ff5f57; border-color: rgba(255, 95, 87, 0.6); animation: low-blink 1s step-end infinite; }
+  @keyframes low-blink { 50% { opacity: 0.55; } }
 
   /* ── Terminal frame ─────────────────────────────── */
   .term-wrap {
@@ -148,10 +161,11 @@
     .window { border-radius: 10px; }
     .title-bar { padding: 8px 10px; gap: 8px; }
     .win-btn { width: 11px; height: 11px; }
-    .title-spacer { width: 0; }
+    .title-spacer { width: auto; }
+    .timer { font-size: 11px; padding: 1px 6px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .window { animation: none; }
+    .window, .timer.low { animation: none; }
   }
 </style>
 </head>
@@ -172,7 +186,7 @@
         </svg>
         <span class="title-text">Kali Linux – Terminal</span>
       </div>
-      <div class="title-spacer"></div>
+      <div class="title-spacer"><span class="timer" id="timer" hidden title="Time left in this lab session"></span></div>
     </div>
     <div class="term-wrap">
       <iframe id="term" src="about:blank" allowfullscreen title="Lab terminal"></iframe>
@@ -227,6 +241,20 @@
         });
     })();
   }
+
+  // ── Live countdown (tmux writes "TIME LEFT mm:ss" to the terminal title) ──
+  var timerEl = document.getElementById('timer');
+  setInterval(function() {
+    try {
+      var t = (termFrame.contentDocument && termFrame.contentDocument.title) || '';
+      var m = t.match(/TIME LEFT ((\d+):)?(\d{1,2}):(\d{2})/);
+      if (!m) return;
+      var secs = (parseInt(m[2] || '0', 10) * 3600) + parseInt(m[3], 10) * 60 + parseInt(m[4], 10);
+      timerEl.textContent = '\u23F1 ' + (m[1] || '') + m[3] + ':' + m[4];
+      timerEl.classList.toggle('low', secs <= 300);
+      timerEl.hidden = false;
+    } catch (e) {}
+  }, 1000);
 
   // Block inside the terminal iframe (same-origin)
   var termFrame = document.getElementById('term');

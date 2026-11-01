@@ -41,8 +41,7 @@ if [ -n "$_end" ] 2>/dev/null; then
   _left=$(( _end - $(date +%s) ))
   [ "$_left" -lt 0 ] && _left=0
   _h=$(( _left / 3600 )); _m=$(( (_left % 3600) / 60 ))
-  if [ "$_h" -gt 0 ]; then _time="${_h}h ${_m}m remaining"
-  else _time="${_m}m remaining"; fi
+  _time="ends $(date -d "@$_end" +%H:%M 2>/dev/null) · live timer top-right"
 else
   _time="${SESSION_TIMEOUT:-3600}s session"
 fi
