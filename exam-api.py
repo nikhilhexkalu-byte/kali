@@ -51,7 +51,7 @@ CHALLENGE_ID_RE = re.compile(r'^[a-z0-9][a-z0-9_-]{0,47}$')
 # Default is false: the demo consumes real lab capacity, so it needs admin auth.
 PUBLIC_DEMO = os.environ.get('PUBLIC_DEMO', 'false').strip().lower() == 'true'
 
-TTYD_THEME = '{"background":"#0f111a","foreground":"#a6accd","cursor":"#ffcc00","selectionBackground":"#1d3b53","black":"#090b10","red":"#ff5370","green":"#c3e88d","yellow":"#ffcb6b","blue":"#82aaff","magenta":"#c792ea","cyan":"#89ddff","white":"#bfc7d5","brightBlack":"#3b4261","brightRed":"#ff5370","brightGreen":"#c3e88d","brightYellow":"#ffcb6b","brightBlue":"#82aaff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}'
+TTYD_THEME = '{"background":"#0c0c0c","foreground":"#c8d6e5","cursor":"#ffffff","cursorAccent":"#0c0c0c","selectionBackground":"#1f3b2a","black":"#0c0c0c","red":"#ff3333","green":"#00ff41","yellow":"#ffcb6b","blue":"#5c9eff","magenta":"#c792ea","cyan":"#89ddff","white":"#c8d6e5","brightBlack":"#636e7a","brightRed":"#ff3333","brightGreen":"#00ff41","brightYellow":"#ffcb6b","brightBlue":"#5c9eff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}'
 
 STAGES = [
     {'id': 1, 'labs': [1, 2], 'name': 'Reconnaissance'},

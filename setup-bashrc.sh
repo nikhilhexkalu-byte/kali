@@ -1,12 +1,12 @@
 #!/bin/bash
-# Creates a Parrot OS-styled .bashrc for each lab user
+# Creates a Kali-styled .bashrc for each lab user
 # Also saves a clean copy at /etc/cyberhx/clean-bashrc for restoration
 # after a slot is wiped between students.
 mkdir -p /etc/cyberhx
 for i in $(seq 1 10); do
   cat > "/home/lab${i}/.bashrc" <<'BASHRC'
-# ── Parrot OS style prompt ─────────────────────────────────
-export PS1='\[\e[01;32m\]┌──(\[\e[1;36m\]\u㉿cyberhx\[\e[01;32m\])-[\[\e[0;1m\]\w\[\e[01;32m\]]\n\[\e[01;32m\]└─\[\e[1;36m\]\$\[\e[0m\] '
+# ── Kali style prompt ──────────────────────────────────────
+export PS1='\[\e[1;31m\]┌──(\[\e[1;32m\]\u㉿cyberhx\[\e[1;31m\])-[\[\e[1;34m\]\w\[\e[1;31m\]]\n\[\e[1;31m\]└─\[\e[1;32m\]\$\[\e[0m\] '
 
 alias ll='ls -lah --color=auto'
 alias ls='ls --color=auto'
@@ -34,8 +34,10 @@ readonly http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY 2>/dev/
 clear
 _lab_num="${USER#lab}"
 _end_file="/tmp/.lab-end-time-${_lab_num}"
-if [ -f "$_end_file" ] 2>/dev/null; then
-  _end=$(cat "$_end_file" 2>/dev/null || echo 0)
+# The deadline file is root-only; lab-shell.sh passes it in as LAB_END_TIME.
+_end="${LAB_END_TIME:-}"
+[ -z "$_end" ] && [ -r "$_end_file" ] && _end=$(cat "$_end_file" 2>/dev/null)
+if [ -n "$_end" ] 2>/dev/null; then
   _left=$(( _end - $(date +%s) ))
   [ "$_left" -lt 0 ] && _left=0
   _h=$(( _left / 3600 )); _m=$(( (_left % 3600) / 60 ))

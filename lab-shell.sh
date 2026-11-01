@@ -75,4 +75,5 @@ exec runuser -u "$LAB_USER" -- env \
   USER="$LAB_USER" \
   LOGNAME="$LAB_USER" \
   SESSION_TIMEOUT="$SESSION_TIMEOUT" \
+  LAB_END_TIME="$END_TIME" \
   tmux new-session -A -s "$TMUX_SESSION"

@@ -3,120 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>PentestLab — Terminal</title>
+<title>Kali Linux — Terminal</title>
 <style>
+  :root {
+    --page: #0a0a1a;
+    --chrome-bg: #1a1a2e;
+    --chrome-border: #2a2a4a;
+    --glow: #00ff41;
+    --shell-bg: #0c0c0c;
+    --title-text: #e0e0e0;
+    --btn-close: #ff5f57;
+    --btn-min: #febc2e;
+    --btn-max: #28c840;
+    color-scheme: dark;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     height: 100%;
     overflow: hidden;
-    background: #0f111a;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--page);
+    font-family: 'Hack', 'DejaVu Sans Mono', 'Liberation Mono', 'Courier New', monospace;
   }
 
-  .shell {
+  .stage {
+    position: fixed;
+    inset: 0;
+    padding: max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
     display: flex;
-    height: 100%;
-    width: 100%;
   }
 
-  /* ── Sidebar ──────────────────────────────────────── */
-  .sidebar {
-    width: 52px;
-    background: linear-gradient(180deg, #080b14 0%, #060910 100%);
+  /* ── Window ─────────────────────────────────────── */
+  .window {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--shell-bg);
+    box-shadow:
+      0 0 0 1.5px var(--glow),
+      0 0 30px rgba(0, 255, 65, 0.15),
+      0 20px 60px rgba(0, 0, 0, 0.6);
+    animation: glow-pulse 4s ease-in-out infinite alternate;
+  }
+  @keyframes glow-pulse {
+    from { box-shadow: 0 0 0 1.5px var(--glow), 0 0 20px rgba(0, 255, 65, 0.1), 0 20px 60px rgba(0, 0, 0, 0.6); }
+    to   { box-shadow: 0 0 0 1.5px var(--glow), 0 0 40px rgba(0, 255, 65, 0.2), 0 20px 60px rgba(0, 0, 0, 0.6); }
+  }
+
+  /* ── Title bar ──────────────────────────────────── */
+  .title-bar {
+    flex-shrink: 0;
+    background: var(--chrome-bg);
+    border-bottom: 1px solid var(--chrome-border);
+    padding: 10px 16px;
+    display: flex;
     align-items: center;
-    padding: 20px 0 16px;
-    position: relative;
-    flex-shrink: 0;
+    gap: 12px;
     user-select: none;
-    z-index: 2;
   }
-
-  /* Accent edge */
-  .sidebar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(137, 221, 255, 0.35) 20%,
-      rgba(130, 170, 255, 0.18) 50%,
-      rgba(199, 146, 234, 0.1) 80%,
-      transparent 100%
-    );
-  }
-
-  .sb-icon {
-    margin-bottom: 20px;
-    flex-shrink: 0;
-    opacity: 0.55;
-    transition: opacity 0.3s;
-  }
-  .sidebar:hover .sb-icon { opacity: 0.8; }
-
-  .sb-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #c3e88d;
-    box-shadow: 0 0 6px rgba(195, 232, 141, 0.4);
-    margin-bottom: 24px;
-    flex-shrink: 0;
-  }
-
-  .sb-label {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    font-size: 10px;
-    letter-spacing: 5px;
-    font-weight: 700;
-    color: rgba(137, 221, 255, 0.2);
-    text-transform: uppercase;
+  .window-controls { display: flex; gap: 8px; flex-shrink: 0; }
+  .win-btn { width: 13px; height: 13px; border-radius: 50%; }
+  .win-btn.close { background: var(--btn-close); }
+  .win-btn.minimize { background: var(--btn-min); }
+  .win-btn.maximize { background: var(--btn-max); }
+  .title-center {
     flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Courier New', 'Liberation Mono', monospace;
-    transition: color 0.3s;
+    gap: 10px;
   }
-  .sidebar:hover .sb-label { color: rgba(137, 221, 255, 0.35); }
-
-  .sb-brand {
-    font-size: 7px;
-    letter-spacing: 3px;
-    font-weight: 600;
-    color: rgba(166, 172, 205, 0.15);
-    text-transform: uppercase;
-    writing-mode: vertical-rl;
-    flex-shrink: 0;
-    transition: color 0.3s;
+  .kali-icon { width: 22px; height: 22px; flex-shrink: 0; }
+  .title-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--title-text);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .sidebar:hover .sb-brand { color: rgba(166, 172, 205, 0.3); }
+  .title-spacer { width: 55px; flex-shrink: 0; }
 
-  /* ── Terminal frame ───────────────────────────────── */
+  /* ── Terminal frame ─────────────────────────────── */
   .term-wrap {
     flex: 1;
     position: relative;
-    background: #0f111a;
-    min-width: 0;
+    min-height: 0;
+    background: var(--shell-bg);
   }
-
   .term-wrap iframe {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     border: none;
-    background: #0f111a;
+    background: var(--shell-bg);
+  }
+  /* Faint scanlines — pointer-events off so typing/clicks reach ttyd */
+  .term-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 65, 0.015) 2px, rgba(0, 255, 65, 0.015) 4px);
+    pointer-events: none;
   }
 
-  /* ── Error state ──────────────────────────────────── */
+  /* ── Error state ────────────────────────────────── */
   .term-error {
     position: absolute;
     inset: 0;
@@ -125,56 +122,63 @@
     justify-content: center;
     flex-direction: column;
     gap: 12px;
-    color: #a6accd;
+    color: #c8d6e5;
     font-size: 14px;
     text-align: center;
     padding: 24px;
+    z-index: 1;
   }
   .term-error.show { display: flex; }
-  .term-error .err-code {
-    font-size: 48px;
-    font-weight: 800;
-    color: rgba(137, 221, 255, 0.15);
-    font-variant-numeric: tabular-nums;
-  }
+  .term-error .err-code { font-size: 48px; font-weight: 800; color: rgba(0, 255, 65, 0.2); }
   .term-error a {
-    color: #89ddff;
+    color: var(--glow);
     text-decoration: none;
     font-size: 13px;
     margin-top: 8px;
-    opacity: 0.7;
-    transition: opacity 0.2s;
+    padding: 6px 14px;
+    border: 1px solid rgba(0, 255, 65, 0.4);
+    border-radius: 6px;
   }
-  .term-error a:hover { opacity: 1; }
+  .term-error a:hover { background: rgba(0, 255, 65, 0.08); }
 
-  /* ── Mobile: collapse sidebar ─────────────────────── */
   @media (max-width: 480px) {
-    .sidebar { width: 36px; padding: 14px 0 10px; }
-    .sb-label { font-size: 8px; letter-spacing: 4px; }
-    .sb-brand { font-size: 6px; }
-    .sb-icon { transform: scale(0.8); margin-bottom: 14px; }
-    .sb-dot { width: 4px; height: 4px; margin-bottom: 16px; }
+    .stage { padding: 6px; }
+    .window { border-radius: 10px; }
+    .title-bar { padding: 8px 10px; gap: 8px; }
+    .win-btn { width: 11px; height: 11px; }
+    .title-spacer { width: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .window { animation: none; }
   }
 </style>
 </head>
 <body>
-<div class="shell">
-  <div class="sidebar">
-    <svg class="sb-icon" width="22" height="26" viewBox="0 0 24 28" fill="none">
-      <path d="M12 1L23 8v12l-11 7L1 20V8z" stroke="#89ddff" stroke-width="1.2" opacity="0.6"/>
-      <path d="M12 6l7 4v8l-7 4-7-4v-8z" stroke="#82aaff" stroke-width="0.8" opacity="0.35"/>
-      <circle cx="12" cy="14" r="2" fill="#89ddff" opacity="0.2"/>
-    </svg>
-    <div class="sb-dot"></div>
-    <div class="sb-label">PENTESTLAB</div>
-    <div class="sb-brand">CYBERHX</div>
-  </div>
-  <div class="term-wrap">
-    <iframe id="term" src="about:blank" allowfullscreen></iframe>
-    <div class="term-error" id="termErr">
-      <div class="err-code">--</div>
-      <div>Lab terminal not available</div>
-      <a href="/">Back to exam</a>
+<div class="stage">
+  <div class="window">
+    <div class="title-bar">
+      <div class="window-controls" aria-hidden="true">
+        <div class="win-btn close"></div>
+        <div class="win-btn minimize"></div>
+        <div class="win-btn maximize"></div>
+      </div>
+      <div class="title-center">
+        <svg class="kali-icon" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <path d="M50 5 C30 5 15 25 15 45 C15 55 20 65 28 72 L40 60 C35 55 32 48 32 42 C32 30 40 20 50 18 C60 20 68 30 68 42 C68 48 65 55 60 60 L72 72 C80 65 85 55 85 45 C85 25 70 5 50 5Z" fill="#00ff41" opacity="0.9"/>
+          <path d="M50 28 C44 28 39 34 39 42 C39 46 41 50 44 53 L50 47 L56 53 C59 50 61 46 61 42 C61 34 56 28 50 28Z" fill="#00cc33"/>
+          <path d="M50 75 L42 65 L35 72 L50 90 L65 72 L58 65 Z" fill="#00ff41" opacity="0.8"/>
+        </svg>
+        <span class="title-text">Kali Linux – Terminal</span>
+      </div>
+      <div class="title-spacer"></div>
+    </div>
+    <div class="term-wrap">
+      <iframe id="term" src="about:blank" allowfullscreen title="Lab terminal"></iframe>
+      <div class="term-error" id="termErr">
+        <div class="err-code">--</div>
+        <div>Lab terminal not available</div>
+        <a href="/">Back to exam</a>
+      </div>
     </div>
   </div>
 </div>
