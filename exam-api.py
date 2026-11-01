@@ -167,7 +167,7 @@ def start_ttyd(lab_num, password=None, end_time=None):
         '-c', f'lab{lab_num}:{pw}',
         '--ping-interval', '30',
         '-t', 'fontSize=14',
-        '-t', "fontFamily='Hack','DejaVu Sans Mono','Liberation Mono','Courier New',monospace",
+        '-t', "fontFamily='JetBrains Mono','DejaVu Sans Mono','Liberation Mono','Courier New',monospace",
         '-t', f'theme={TTYD_THEME}',
         '-t', 'disableLeaveAlert=true',
         '-t', 'enableSixel=false',

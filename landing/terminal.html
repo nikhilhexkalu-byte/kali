@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Kali Linux — Terminal</title>
 <style>
+  @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMonoNL-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+  @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMonoNL-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
   :root {
     --page: #0a0a1a;
     --chrome-bg: #1a1a2e;
@@ -23,7 +25,7 @@
     height: 100%;
     overflow: hidden;
     background: var(--page);
-    font-family: 'Hack', 'DejaVu Sans Mono', 'Liberation Mono', 'Courier New', monospace;
+    font-family: 'JetBrains Mono', 'DejaVu Sans Mono', 'Liberation Mono', 'Courier New', monospace;
   }
 
   .stage {
@@ -205,6 +207,27 @@
   document.addEventListener('keydown', blockKeys, true);
   document.addEventListener('contextmenu', blockClipboard, true);
 
+  // ── Terminal font (self-hosted, so every student sees the same) ──
+  var TERM_FONT = "'JetBrains Mono', 'DejaVu Sans Mono', 'Liberation Mono', 'Courier New', monospace";
+  function applyTermFont(win, doc) {
+    var st = doc.createElement('style');
+    st.textContent =
+      "@font-face{font-family:'JetBrains Mono';src:url('/assets/fonts/JetBrainsMonoNL-Regular.woff2') format('woff2');font-weight:400}" +
+      "@font-face{font-family:'JetBrains Mono';src:url('/assets/fonts/JetBrainsMonoNL-Bold.woff2') format('woff2');font-weight:700}";
+    (doc.head || doc.documentElement).appendChild(st);
+    var tries = 0;
+    (function waitTerm() {
+      if (!win.term || !win.term.options) { if (tries++ < 50) setTimeout(waitTerm, 200); return; }
+      Promise.all([doc.fonts.load("400 14px 'JetBrains Mono'"), doc.fonts.load("700 14px 'JetBrains Mono'")])
+        .catch(function() {})
+        .then(function() {
+          win.term.options.fontFamily = TERM_FONT;
+          // ttyd refits rows/cols on resize
+          try { win.dispatchEvent(new win.Event('resize')); } catch (e) {}
+        });
+    })();
+  }
+
   // Block inside the terminal iframe (same-origin)
   var termFrame = document.getElementById('term');
   termFrame.addEventListener('load', function() {
@@ -214,6 +237,9 @@
       iDoc.addEventListener('copy', blockClipboard, true);
       iDoc.addEventListener('keydown', blockKeys, true);
       iDoc.addEventListener('contextmenu', blockClipboard, true);
+
+      // Use the bundled JetBrains Mono inside the terminal too
+      applyTermFont(termFrame.contentWindow, iDoc);
 
       // Also block clipboard API
       if (termFrame.contentWindow.navigator && termFrame.contentWindow.navigator.clipboard) {
