@@ -267,7 +267,10 @@ def _free_slot(lab_num):
 
 
 def release_lease(lab_num):
-    stop_lab(lab_num)
+    try:
+        stop_lab(lab_num)
+    except Exception as e:
+        print(f'[lease] WARNING: stop_lab({lab_num}) failed: {e}')
     with lock:
         _free_slot(lab_num)
 
@@ -283,8 +286,13 @@ def reap_expired():
                 if s['owner'] == 'lease' and s['expires_at'] and s['expires_at'] <= now:
                     due.append(n)
         for n in due:
-            print(f'[lease] Lab {n}: lease expired — reclaiming')
-            release_lease(n)
+            try:
+                print(f'[lease] Lab {n}: lease expired — reclaiming')
+                release_lease(n)
+            except Exception as e:
+                print(f'[lease] ERROR reclaiming lab {n}: {e}')
+                with lock:
+                    _free_slot(n)
 
 
 # ── Stage management (legacy demo) ─────────────────────────────────
