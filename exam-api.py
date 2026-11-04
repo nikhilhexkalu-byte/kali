@@ -96,8 +96,8 @@ lock = threading.Lock()
 timer_handle = None
 ttyd_procs = {}              # lab_num -> subprocess.Popen
 
-# Slot registry shared by BOTH surfaces so a demo exam and a lease can never
-# hand out the same lab. owner is 'demo' or 'lease'.
+# Slot registry shared by both surfaces. owner is 'demo' or 'lease'.
+# Expired demos are auto-reset so they never block CAPT leases.
 slots = {
     i: {'owner': None, 'session_id': None, 'attempt_id': None,
         'password': None, 'expires_at': 0, 'challenge_id': None,
@@ -276,15 +276,19 @@ def release_lease(lab_num):
 
 
 def reap_expired():
-    """Background sweep: end leases whose deadline has passed."""
+    """Background sweep: end leases whose deadline has passed and reset expired demos."""
     while True:
         time.sleep(15)
         now = int(time.time())
         due = []
+        demo_expired = False
         with lock:
             for n, s in slots.items():
                 if s['owner'] == 'lease' and s['expires_at'] and s['expires_at'] <= now:
                     due.append(n)
+            if exam['status'] == 'running' and exam.get('stage_start'):
+                if (exam['stage_start'] + SESSION_TIMEOUT) <= now:
+                    demo_expired = True
         for n in due:
             try:
                 print(f'[lease] Lab {n}: lease expired — reclaiming')
@@ -293,6 +297,12 @@ def reap_expired():
                 print(f'[lease] ERROR reclaiming lab {n}: {e}')
                 with lock:
                     _free_slot(n)
+        if demo_expired:
+            try:
+                print('[reaper] Auto-resetting expired demo exam')
+                do_reset()
+            except Exception as e:
+                print(f'[reaper] ERROR resetting demo: {e}')
 
 
 # ── Stage management (legacy demo) ─────────────────────────────────
@@ -522,9 +532,21 @@ def lease_create(body):
                         'challenge_id': s['challenge_id'],
                         'flag_sha256': s['flag_sha256'], 'reused': True}, 200
 
-        if exam['status'] == 'running':
-            return {'error': 'lab is busy running the local demo exam'}, 503
+        # Auto-reset an expired demo so it can never block CAPT leases.
+        if exam['status'] == 'running' and exam.get('stage_start'):
+            remaining = (exam['stage_start'] + SESSION_TIMEOUT) - now
+            if remaining <= 0:
+                _demo_expired = True
+            else:
+                _demo_expired = False
+        else:
+            _demo_expired = False
 
+    if _demo_expired:
+        print('[lease] Auto-resetting expired demo exam to free slots')
+        do_reset()
+
+    with lock:
         free = [n for n, s in slots.items() if s['owner'] is None]
         if not free:
             return {'error': 'no lab capacity available', 'retry_after': 60}, 503

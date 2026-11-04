@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TERM=xterm-256color \
     LANG=C.UTF-8 \
     TZ=Asia/Kolkata \
-    MAX_LABS=6 \
+    MAX_LABS=12 \
     SESSION_TIMEOUT=900 \
     ALLOWED_DOMAIN=cyberhx.com
 
@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create lab users — no sudo at all (nmap/tcpdump get cap_net_raw via setcap).
 RUN apt-get update && apt-get install -y --no-install-recommends libcap2-bin \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && for i in $(seq 1 10); do \
+    && for i in $(seq 1 12); do \
         useradd -m -s /bin/bash "lab${i}" && \
         chmod 700 "/home/lab${i}" ; \
     done \
