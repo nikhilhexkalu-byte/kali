@@ -2,18 +2,12 @@
 """
 CyberHX Lab API
 
-Two surfaces:
-
-  1. Legacy demo exam  (/api/exam/*)   — the single-player staged walkthrough.
-     Kept for local testing. Credentials are NEVER served on the public
-     status endpoint; starting it can be locked behind admin auth.
-
-  2. Lease API         (/api/v1/*)     — the multi-tenant integration used by
-     pentestlab.cyberhx.com. The site's SERVER (never a browser) leases one
-     isolated lab slot per exam attempt, authenticated with an HMAC shared
-     secret. Each lease gets a freshly rotated terminal password, its own
-     deadline, and optionally a per-attempt flag provisioned by a challenge
-     script. Slots are wiped and freed when the lease ends.
+Lease API (/api/v1/*) — the multi-tenant integration used by
+pentestlab.cyberhx.com. The site's SERVER (never a browser) leases one
+isolated lab slot per exam attempt, authenticated with an HMAC shared
+secret. Each lease gets a freshly rotated terminal password, its own
+deadline, and optionally a per-attempt flag provisioned by a challenge
+script. Slots are wiped and freed when the lease ends.
 
 Only the Python standard library is used.
 """
@@ -32,7 +26,7 @@ import time
 
 # ── Config ──────────────────────────────────────────────────────────
 API_PORT = 9090
-SESSION_TIMEOUT = int(os.environ.get('SESSION_TIMEOUT', '900'))
+SESSION_TIMEOUT = int(os.environ.get('SESSION_TIMEOUT', '900'))  # lease default
 MAX_LABS = int(os.environ.get('MAX_LABS', '6'))
 CREDS_FILE = '/tmp/lab-credentials.json'
 API_TOKEN_FILE = '/tmp/.api-token'
@@ -47,17 +41,7 @@ NONCE_TTL = CLOCK_SKEW_SECONDS * 2
 CHALLENGE_DIR = os.environ.get('CHALLENGE_DIR', '/opt/challenges')
 CHALLENGE_ID_RE = re.compile(r'^[a-z0-9][a-z0-9_-]{0,47}$')
 
-# Set PUBLIC_DEMO=true to let anonymous visitors start the legacy demo exam.
-# Default is false: the demo consumes real lab capacity, so it needs admin auth.
-PUBLIC_DEMO = os.environ.get('PUBLIC_DEMO', 'false').strip().lower() == 'true'
-
 TTYD_THEME = '{"background":"#0c0c0c","foreground":"#c8d6e5","cursor":"#ffffff","cursorAccent":"#0c0c0c","selectionBackground":"#1f3b2a","black":"#0c0c0c","red":"#ff3333","green":"#00ff41","yellow":"#ffcb6b","blue":"#5c9eff","magenta":"#c792ea","cyan":"#89ddff","white":"#c8d6e5","brightBlack":"#636e7a","brightRed":"#ff3333","brightGreen":"#00ff41","brightYellow":"#ffcb6b","brightBlue":"#5c9eff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}'
-
-STAGES = [
-    {'id': 1, 'labs': [1, 2], 'name': 'Reconnaissance'},
-    {'id': 2, 'labs': [3, 4], 'name': 'Exploitation'},
-    {'id': 3, 'labs': [5, 6], 'name': 'Post-Exploitation'},
-]
 
 
 def _read_secret(path):
@@ -85,19 +69,8 @@ def via_nginx(handler):
 
 
 # ── Shared state ────────────────────────────────────────────────────
-exam = {
-    'status': 'idle',        # idle | running | completed
-    'current_stage': 0,      # 0 = not started, 1-3
-    'stage_start': 0,        # epoch when current stage began
-    'exam_start': 0,         # epoch when exam began
-    'completed': [],         # list of completed stage ids
-}
 lock = threading.Lock()
-timer_handle = None
 ttyd_procs = {}              # lab_num -> subprocess.Popen
-
-# Slot registry shared by both surfaces. owner is 'demo' or 'lease'.
-# Expired demos are auto-reset so they never block CAPT leases.
 slots = {
     i: {'owner': None, 'session_id': None, 'attempt_id': None,
         'password': None, 'expires_at': 0, 'challenge_id': None,
@@ -276,19 +249,15 @@ def release_lease(lab_num):
 
 
 def reap_expired():
-    """Background sweep: end leases whose deadline has passed and reset expired demos."""
+    """Background sweep: end leases whose deadline has passed."""
     while True:
         time.sleep(15)
         now = int(time.time())
         due = []
-        demo_expired = False
         with lock:
             for n, s in slots.items():
                 if s['owner'] == 'lease' and s['expires_at'] and s['expires_at'] <= now:
                     due.append(n)
-            if exam['status'] == 'running' and exam.get('stage_start'):
-                if (exam['stage_start'] + SESSION_TIMEOUT) <= now:
-                    demo_expired = True
         for n in due:
             try:
                 print(f'[lease] Lab {n}: lease expired — reclaiming')
@@ -297,145 +266,10 @@ def reap_expired():
                 print(f'[lease] ERROR reclaiming lab {n}: {e}')
                 with lock:
                     _free_slot(n)
-        if demo_expired:
-            try:
-                print('[reaper] Auto-resetting expired demo exam')
-                do_reset()
-            except Exception as e:
-                print(f'[reaper] ERROR resetting demo: {e}')
 
 
-# ── Stage management (legacy demo) ─────────────────────────────────
-def begin_stage(stage_num):
-    global timer_handle
-    stage = STAGES[stage_num - 1]
-    now = int(time.time())
-    end_time = now + SESSION_TIMEOUT
-
-    with lock:
-        exam['current_stage'] = stage_num
-        exam['stage_start'] = now
-
-    _write_root_only('/tmp/.stage-end-time', end_time)
-
-    print(f'[demo] === Stage {stage_num}: {stage["name"]} -- Labs {stage["labs"]} ({SESSION_TIMEOUT}s) ===')
-
-    for lab in stage['labs']:
-        pw = new_password()
-        with lock:
-            slots[lab].update({'owner': 'demo', 'password': pw,
-                               'expires_at': end_time, 'started_at': now})
-        start_ttyd(lab, pw, end_time=end_time)
-
-    timer_handle = threading.Timer(SESSION_TIMEOUT, advance)
-    timer_handle.daemon = True
-    timer_handle.start()
-
-
-def advance():
-    with lock:
-        cur = exam['current_stage']
-    stage = STAGES[cur - 1]
-
-    for lab in stage['labs']:
-        stop_lab(lab)
-        with lock:
-            _free_slot(lab)
-
-    with lock:
-        exam['completed'].append(cur)
-
-    if cur < len(STAGES):
-        time.sleep(2)
-        begin_stage(cur + 1)
-    else:
-        try:
-            os.remove('/tmp/.stage-end-time')
-        except OSError:
-            pass
-        with lock:
-            exam['status'] = 'completed'
-            exam['current_stage'] = 0
-            exam['stage_start'] = 0
-        print('[demo] === EXAM COMPLETE ===')
-
-
-# ── Legacy demo actions ────────────────────────────────────────────
-def do_start():
-    global exam
-    with lock:
-        if exam['status'] == 'running':
-            return {'error': 'Exam already in progress'}, 409
-        busy = [n for n, s in slots.items() if s['owner'] == 'lease']
-        if busy:
-            return {'error': 'Lab capacity is in use by live exam sessions'}, 409
-        exam = {'status': 'running', 'current_stage': 0, 'stage_start': 0,
-                'exam_start': int(time.time()), 'completed': []}
-    begin_stage(1)
-    return {'ok': True, 'stage': 1}, 200
-
-
-def do_reset():
-    global exam, timer_handle
-    if timer_handle:
-        timer_handle.cancel()
-        timer_handle = None
-
-    for s in STAGES:
-        for lab in s['labs']:
-            stop_lab(lab)
-            with lock:
-                if slots[lab]['owner'] == 'demo':
-                    _free_slot(lab)
-
-    try:
-        os.remove('/tmp/.stage-end-time')
-    except OSError:
-        pass
-
-    with lock:
-        exam = {'status': 'idle', 'current_stage': 0, 'stage_start': 0,
-                'exam_start': 0, 'completed': []}
-    print('[demo] === EXAM RESET ===')
-    return {'ok': True}, 200
-
-
-def do_status(include_creds=False):
-    """Legacy demo status.
-
-    include_creds is ONLY ever true for admin-authenticated callers. The
-    public page gets lab paths and usernames, never passwords — the learner
-    receives their password from the authenticated caller that leased the slot.
-    """
-    with lock:
-        now = int(time.time())
-        out = dict(exam)
-        out['total_stages'] = len(STAGES)
-        out['session_timeout'] = SESSION_TIMEOUT
-        out['stages'] = [{'id': s['id'], 'name': s['name'], 'labs': s['labs']} for s in STAGES]
-
-        if out['status'] == 'running' and out['stage_start'] > 0:
-            out['time_remaining'] = max(0, SESSION_TIMEOUT - (now - out['stage_start']))
-        else:
-            out['time_remaining'] = 0
-
-        if out['current_stage'] > 0:
-            stage = STAGES[out['current_stage'] - 1]
-            out['stage_name'] = stage['name']
-            out['active_labs'] = [
-                {'id': lab_id, 'user': f'lab{lab_id}', 'path': f'/lab/{lab_id}/',
-                 **({'password': slots[lab_id]['password']} if include_creds else {})}
-                for lab_id in stage['labs']
-            ]
-        else:
-            out['active_labs'] = []
-            out['stage_name'] = ''
-
-    return out, 200
-
-
-def do_admin_labs():
-    """All lab slots and their current terminal passwords (admin only)."""
+def admin_labs():
+    """All lab slots and their current state (admin only)."""
     with lock:
         return {'labs': [
             {'id': n, 'user': f'lab{n}', 'path': f'/lab/{n}/',
@@ -532,21 +366,6 @@ def lease_create(body):
                         'challenge_id': s['challenge_id'],
                         'flag_sha256': s['flag_sha256'], 'reused': True}, 200
 
-        # Auto-reset an expired demo so it can never block CAPT leases.
-        if exam['status'] == 'running' and exam.get('stage_start'):
-            remaining = (exam['stage_start'] + SESSION_TIMEOUT) - now
-            if remaining <= 0:
-                _demo_expired = True
-            else:
-                _demo_expired = False
-        else:
-            _demo_expired = False
-
-    if _demo_expired:
-        print('[lease] Auto-resetting expired demo exam to free slots')
-        do_reset()
-
-    with lock:
         free = [n for n, s in slots.items() if s['owner'] is None]
         if not free:
             return {'error': 'no lab capacity available', 'retry_after': 60}, 503
@@ -658,15 +477,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split('?')[0]
 
-        if path == '/api/exam/status':
-            data, code = do_status(include_creds=False)
-            self._json(data, code)
-
-        elif path == '/api/admin/labs':
+        if path == '/api/admin/labs':
             if not self._admin_ok():
                 self._json({'error': 'forbidden'}, 403)
                 return
-            data, code = do_admin_labs()
+            data, code = admin_labs()
             self._json(data, code)
 
         elif path == '/api/v1/capacity':
@@ -688,24 +503,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         path = self.path.split('?')[0]
         body = self._read_body()
 
-        if path == '/api/exam/start':
-            # Starting the demo consumes real capacity, so it is admin-gated
-            # unless the operator opted in with PUBLIC_DEMO=true.
-            if not PUBLIC_DEMO and not self._admin_ok():
-                self._json({'error': 'This walkthrough is admin-only. Learners start '
-                                     'their lab from the exam on pentestlab.cyberhx.com.'}, 403)
-                return
-            data, code = do_start()
-            self._json(data, code)
-
-        elif path == '/api/exam/reset':
-            if not self._admin_ok():
-                self._json({'error': 'forbidden'}, 403)
-                return
-            data, code = do_reset()
-            self._json(data, code)
-
-        elif path == '/api/v1/sessions':
+        if path == '/api/v1/sessions':
             if self._lease_route('POST', body) is None:
                 return
             try:
@@ -735,10 +533,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
 # ── Main ────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     print(f'[lab-api] Starting on :{API_PORT}')
-    print(f'[lab-api] Slots: {MAX_LABS} | demo stage timeout: {SESSION_TIMEOUT}s')
+    print(f'[lab-api] Slots: {MAX_LABS}')
     print(f'[lab-api] Internal token : {"loaded" if _api_token else "NOT SET (dev mode)"}')
     print(f'[lab-api] Lease API      : {"enabled" if _lease_secret else "DISABLED (set LEASE_SECRET)"}')
-    print(f'[lab-api] Public demo    : {"OPEN to anyone" if PUBLIC_DEMO else "admin auth required"}')
     print(f'[lab-api] Challenge dir  : {CHALLENGE_DIR}')
 
     reaper = threading.Thread(target=reap_expired, daemon=True)
