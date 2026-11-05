@@ -22,6 +22,21 @@ elif [ -f "$STAGE_END_FILE" ]; then
   END_TIME=$(cat "$STAGE_END_FILE" 2>/dev/null || echo "")
 fi
 
+# Refuse to start a new shell if the lease has already expired.
+# Without this, ttyd (running as root) would immediately spawn a fresh
+# bash on reconnect, giving the student an hour of extra time with a
+# 00:00 display.
+if [ -n "$END_TIME" ] && [ "$END_TIME" -gt 0 ] 2>/dev/null && [ "$END_TIME" -le "$NOW" ] 2>/dev/null; then
+  echo -e "\033[1;31m"
+  echo "╔══════════════════════════════════════════════════════╗"
+  echo "║  Session expired. Return to the platform to start    ║"
+  echo "║  a new lab session.                                  ║"
+  echo "╚══════════════════════════════════════════════════════╝"
+  echo -e "\033[0m"
+  sleep 5
+  exit 0
+fi
+
 if [ -n "$END_TIME" ] && [ "$END_TIME" -gt "$NOW" ] 2>/dev/null; then
   SESSION_TIMEOUT=$((END_TIME - NOW))
 else
@@ -59,9 +74,12 @@ chmod 600 "$SESSION_FILE" 2>/dev/null || true
 
   sleep 5
 
-  # Kill only this lab user's processes
+  # Kill all this slot's processes and ttyd so reconnection is impossible.
+  # Without killing ttyd, it would immediately spawn a new bash giving the
+  # student another hour with a 00:00 display.
   rm -f "$SESSION_FILE"
   pkill -9 -u "$LAB_USER" 2>/dev/null || true
+  pkill -f "/term/${LAB_NUM}/" 2>/dev/null || true
 ) &
 TIMER_PID=$!
 
