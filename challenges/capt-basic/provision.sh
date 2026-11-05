@@ -61,8 +61,8 @@ nohup runuser -u "$SVC" -- env \
 LAB_PID=$!
 
 sleep 2
-if ! kill -0 "$LAB_PID" 2>/dev/null; then
-  echo "FATAL: lab.py died on startup. Log:" >&2
+if ! ss -tln 2>/dev/null | grep -q ":${PORT}"; then
+  echo "FATAL: lab.py not listening on :${PORT} (nohup PID=$LAB_PID). Log:" >&2
   cat "$LAB_LOG" >&2
   exit 1
 fi

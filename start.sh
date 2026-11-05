@@ -247,7 +247,7 @@ mount -o remount,hidepid=2 /proc 2>/dev/null && \
 
 # ── Start exam API server ────────────────────────────────────────
 echo "[*] Starting exam API on :9090..."
-python3 /exam-api.py &
+python3 -u /exam-api.py &
 EXAM_API_PID=$!
 sleep 1
 
@@ -283,7 +283,7 @@ while true; do
   sleep 30
   if ! kill -0 "$EXAM_API_PID" 2>/dev/null; then
     echo "[watchdog] Restarting exam API..."
-    python3 /exam-api.py &
+    python3 -u /exam-api.py &
     EXAM_API_PID=$!
   fi
 done
