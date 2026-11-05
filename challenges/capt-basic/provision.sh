@@ -51,6 +51,9 @@ chmod 600 "$ROOT/data/blog.db"
 LAB_LOG="/tmp/lab-${CHX_LAB_NUM}.log"
 SVC_PORT=$PORT
 
+# Kill any stale process from a previous session on this slot
+pkill -u "$SVC" 2>/dev/null || true
+sleep 0.5
 nohup runuser -u "$SVC" -- env \
   CHX_LAB_NUM="$CHX_LAB_NUM" \
   SVC_PORT="$SVC_PORT" \

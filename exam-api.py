@@ -52,6 +52,8 @@ def _read_secret(path):
         return ''
 
 
+STATE_FILE = '/tmp/exam-state.json'
+
 # ── Internal auth token (set by start.sh) ──────────────────────────
 # Proves a request arrived through nginx rather than straight from a lab
 # user on localhost:9090. It is NOT an authorization signal: nginx attaches
@@ -148,6 +150,10 @@ def start_ttyd(lab_num, password=None, end_time=None):
     ]
 
     print(f'[lab] Starting lab {lab_num} on :{port}')
+    # Kill any stale ttyd that survived an exam-api restart on this slot
+    subprocess.run(['pkill', '-f', f'/term/{lab_num}/'], capture_output=True, timeout=3)
+    time.sleep(0.3)
+
     ttyd_procs[lab_num] = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return True
 
@@ -192,6 +198,12 @@ def provision_challenge(lab_num, challenge_id, flag):
     script = _challenge_script(challenge_id, 'provision.sh')
     if not script:
         return False, f'challenge "{challenge_id}" is not installed on this lab'
+    # Kill any stale service-user processes (handles exam-api restart without cleanup).
+    # All CAPT challenges use "web-chx{N}"; cppt-final uses "www-chx{N}".
+    # Killing both is harmless when only one exists.
+    for prefix in ('web-chx', 'www-chx'):
+        subprocess.run(['pkill', '-u', f'{prefix}{lab_num}'], capture_output=True, timeout=5)
+    time.sleep(0.5)
     env = dict(os.environ)
     env.update({
         'CHX_LAB_NUM': str(lab_num),
@@ -229,6 +241,47 @@ def teardown_challenge(lab_num):
         pass
 
 
+# ── State persistence (survives watchdog restart) ──────────────────
+def _save_state():
+    try:
+        now = int(time.time())
+        active = {}
+        with lock:
+            for n, s in slots.items():
+                if s['owner'] is not None and s['expires_at'] > now:
+                    active[str(n)] = dict(s)
+        with open(STATE_FILE, 'w') as f:
+            json.dump(active, f)
+    except Exception as e:
+        print(f'[state] WARNING: could not save state: {e}')
+
+
+def _restore_state():
+    """On startup, reload leases that survived a watchdog restart and re-launch ttyd."""
+    try:
+        with open(STATE_FILE) as f:
+            saved = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return
+    now = int(time.time())
+    restored = 0
+    for n_str, s in saved.items():
+        try:
+            n = int(n_str)
+            if n not in slots:
+                continue
+            if s.get('expires_at', 0) <= now:
+                continue
+            slots[n].update(s)
+            sessions[s['session_id']] = n
+            start_ttyd(n, password=s['password'], end_time=s['expires_at'])
+            restored += 1
+        except Exception as e:
+            print(f'[state] WARNING: could not restore slot {n_str}: {e}')
+    if restored:
+        print(f'[state] Restored {restored} active lease(s) — students can reconnect')
+
+
 # ── Slot lifecycle ─────────────────────────────────────────────────
 def _free_slot(lab_num):
     s = slots[lab_num]
@@ -246,6 +299,7 @@ def release_lease(lab_num):
         print(f'[lease] WARNING: stop_lab({lab_num}) failed: {e}')
     with lock:
         _free_slot(lab_num)
+    _save_state()
 
 
 def reap_expired():
@@ -400,6 +454,7 @@ def lease_create(body):
         return {'error': 'failed to start terminal'}, 500
 
     print(f'[lease] Lab {lab_num} leased to attempt {attempt_id} for {duration}s')
+    _save_state()
     return {'session_id': session_id, 'lab_id': lab_num, 'user': f'lab{lab_num}',
             'password': password, 'terminal_path': f'/lab/{lab_num}/',
             'expires_at': expires_at, 'remaining': duration,
@@ -543,6 +598,8 @@ if __name__ == '__main__':
     print(f'[lab-api] Internal token : {"loaded" if _api_token else "NOT SET (dev mode)"}')
     print(f'[lab-api] Lease API      : {"enabled" if _lease_secret else "DISABLED (set LEASE_SECRET)"}')
     print(f'[lab-api] Challenge dir  : {CHALLENGE_DIR}')
+
+    _restore_state()
 
     reaper = threading.Thread(target=reap_expired, daemon=True)
     reaper.start()

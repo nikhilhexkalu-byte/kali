@@ -33,6 +33,9 @@ chmod 640 "$ROOT/flag.txt"
 
 
 # Start the lab
+# Kill any stale process from a previous session on this slot
+pkill -u "$SVC" 2>/dev/null || true
+sleep 0.5
 nohup runuser -u "$SVC" -- env \
   CHX_LAB_NUM="$CHX_LAB_NUM" \
   SVC_PORT="$PORT" \
