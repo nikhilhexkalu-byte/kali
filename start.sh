@@ -144,8 +144,17 @@ if [ "$IPTABLES_OK" = "false" ]; then
 fi
 
 # ── Update tinyproxy filter with allowed domain ──────────────────
-echo "\.${ALLOWED_DOMAIN}$" > /etc/tinyproxy/filter.txt
-echo "[+] Proxy whitelist: *.${ALLOWED_DOMAIN}"
+# Explicit allowlist — vm.cyberhx.com is excluded so students cannot
+# use the lab server itself as a scan target (would flood nginx and OOM ttyd).
+# POSIX ERE has no negative lookahead so we enumerate safe subdomains.
+DOMAIN_RE="$(printf '%s' "$ALLOWED_DOMAIN" | sed 's/\./\\./g')"
+printf '%s\n' \
+  "^pentestlab\\.${DOMAIN_RE}$" \
+  "^www\\.${DOMAIN_RE}$" \
+  "^${DOMAIN_RE}$" \
+  > /etc/tinyproxy/filter.txt
+unset DOMAIN_RE
+echo "[+] Proxy allowlist: pentestlab.${ALLOWED_DOMAIN}, www.${ALLOWED_DOMAIN}, ${ALLOWED_DOMAIN} (vm.${ALLOWED_DOMAIN} blocked)"
 chmod 600 /etc/tinyproxy/filter.txt
 
 # ── Start tinyproxy ──────────────────────────────────────────────

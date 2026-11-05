@@ -3,7 +3,7 @@
 # Also saves a clean copy at /etc/cyberhx/clean-bashrc for restoration
 # after a slot is wiped between students.
 mkdir -p /etc/cyberhx
-for i in $(seq 1 10); do
+for i in $(seq 1 50); do
   cat > "/home/lab${i}/.bashrc" <<'BASHRC'
 # ── Kali style prompt ──────────────────────────────────────
 export PS1='\[\e[1;31m\]┌──(\[\e[1;32m\]\u㉿cyberhx\[\e[1;31m\])-[\[\e[1;34m\]\w\[\e[1;31m\]]\n\[\e[1;31m\]└─\[\e[1;32m\]\$\[\e[0m\] '
