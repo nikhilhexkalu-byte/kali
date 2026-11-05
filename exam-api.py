@@ -444,12 +444,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _json(self, data, code=200):
         body = json.dumps(data).encode()
-        self.send_response(code)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Content-Length', str(len(body)))
-        self.send_header('Cache-Control', 'no-store')
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(code)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def _read_body(self):
         try:
@@ -477,7 +480,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split('?')[0]
 
-        if path == '/api/admin/labs':
+        if path == '/api/health':
+            self._json({'status': 'ok'}, 200)
+
+        elif path == '/api/admin/labs':
             if not self._admin_ok():
                 self._json({'error': 'forbidden'}, 403)
                 return

@@ -54,6 +54,13 @@ http {
         # All exam-api proxied requests carry the internal token
         # so exam-api rejects direct access from lab users on localhost
 
+        location = /api/health {
+            proxy_pass http://127.0.0.1:9090;
+            proxy_http_version 1.1;
+            proxy_set_header X-Internal-Token "__INTERNAL_TOKEN__";
+            proxy_set_header X-CHX-Admin "";
+        }
+
         location = /api/exam/status {
             proxy_pass http://127.0.0.1:9090;
             proxy_http_version 1.1;
