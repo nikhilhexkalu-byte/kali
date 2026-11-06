@@ -3,7 +3,13 @@
 import http.server, os, html
 from urllib.parse import parse_qs
 
-FLAG = os.environ.get('CHX_FLAG', 'CHX{default}')
+def _load_flag():
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.flag')) as f:
+            return f.read().strip()
+    except Exception:
+        return 'CHX{default}'
+FLAG = _load_flag()
 PORT = int(os.environ.get('SVC_PORT', '8080'))
 
 FILES = {'report-2026.xlsx': '(binary)', 'notes.txt': 'Meeting notes: quarterly review', 'credentials.bak': 'admin:admin\nbackup:backup123'}

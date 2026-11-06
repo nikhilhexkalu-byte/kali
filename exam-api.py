@@ -262,22 +262,46 @@ def _restore_state():
         with open(STATE_FILE) as f:
             saved = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return
+        saved = {}
     now = int(time.time())
     restored = 0
+    restored_slots = set()
     for n_str, s in saved.items():
         try:
             n = int(n_str)
             if n not in slots:
                 continue
             if s.get('expires_at', 0) <= now:
+                # Lease expired while we were down — clean the slot now so the
+                # next learner doesn't inherit stale files or bash history.
+                print(f'[state] Slot {n}: lease expired during downtime — cleaning')
+                try:
+                    subprocess.run(
+                        ['/usr/local/bin/lab-cleanup.sh', str(n)],
+                        capture_output=True, timeout=30,
+                    )
+                except Exception:
+                    pass
                 continue
             slots[n].update(s)
             sessions[s['session_id']] = n
             start_ttyd(n, password=s['password'], end_time=s['expires_at'])
             restored += 1
+            restored_slots.add(n)
         except Exception as e:
             print(f'[state] WARNING: could not restore slot {n_str}: {e}')
+    # Slots not in the saved state but potentially dirty (e.g. state file was
+    # truncated, or a lease was active when the process was killed before save).
+    for n in range(1, MAX_LABS + 1):
+        if n not in restored_slots and os.path.exists(f'/tmp/.lab-session-{n}'):
+            print(f'[state] Slot {n}: stale session marker — cleaning')
+            try:
+                subprocess.run(
+                    ['/usr/local/bin/lab-cleanup.sh', str(n)],
+                    capture_output=True, timeout=30,
+                )
+            except Exception:
+                pass
     if restored:
         print(f'[state] Restored {restored} active lease(s) — students can reconnect')
 
@@ -434,6 +458,17 @@ def lease_create(body):
             'challenge_id': challenge_id, 'flag_sha256': None, 'started_at': now,
         })
         sessions[session_id] = lab_num
+
+    # Always sanitise the slot before provisioning. If the container slept or
+    # restarted while a lease was active, reap_expired never ran and the home
+    # directory still holds the previous learner's files and bash history.
+    try:
+        subprocess.run(
+            ['/usr/local/bin/lab-cleanup.sh', str(lab_num)],
+            capture_output=True, timeout=30,
+        )
+    except Exception as e:
+        print(f'[lease] WARNING: pre-lease cleanup for lab {lab_num} failed: {e}')
 
     # Provision the challenge (and its per-attempt flag) before exposing the shell.
     flag_sha256 = None

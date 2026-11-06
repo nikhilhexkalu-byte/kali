@@ -16,6 +16,8 @@ useradd -r -s /usr/sbin/nologin "$SVC" 2>/dev/null || true
 # Plant the flag (root-only)
 install -o root -g root -m 600 /dev/null "$ROOT/flag.txt"
 printf '%s\n' "$CHX_FLAG" > "$ROOT/flag.txt"
+# Service-user-only copy for the challenge web application (not in the env)
+install -o "$SVC" -g "$SVC" -m 400 /dev/stdin "$ROOT/.flag" <<< "$CHX_FLAG"
 
 # Copy lab script
 cp "${CHALLENGE_DIR}/lab.py" "$ROOT/lab.py"
@@ -36,7 +38,6 @@ sleep 0.5
 nohup runuser -u "$SVC" -- env \
   CHX_LAB_NUM="$CHX_LAB_NUM" \
   SVC_PORT="$PORT" \
-  CHX_FLAG="$CHX_FLAG" \
   python3 "$ROOT/lab.py" > "/tmp/lab-${CHX_LAB_NUM}.log" 2>&1 &
 LAB_PID=$!
 
