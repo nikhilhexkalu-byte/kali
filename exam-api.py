@@ -110,13 +110,18 @@ def _write_root_only(path, value):
         f.write(str(value))
 
 
-def start_ttyd(lab_num, password=None, end_time=None):
+def start_ttyd(lab_num, password=None, end_time=None, new_lease=False):
     """Launch a ttyd instance for one lab.
 
     end_time is the epoch this shell must die at. It is written to a per-lab
     file that lab-shell.sh prefers over the shared demo stage clock, so a
     lease of any length counts down correctly and a stale stage file from an
     earlier demo can never cut a leased session short.
+
+    new_lease=True kills the slot's tmux session before starting, ensuring
+    each student gets an isolated shell with no history from the previous user.
+    Set False on _restore_state() so students can reconnect after a watchdog
+    restart without losing their active tmux session.
     """
     port = 7680 + lab_num
     pw = password or get_password(lab_num)
@@ -149,10 +154,21 @@ def start_ttyd(lab_num, password=None, end_time=None):
         '/usr/local/bin/lab-shell.sh', str(lab_num),
     ]
 
-    print(f'[lab] Starting lab {lab_num} on :{port}')
-    # Kill any stale ttyd that survived an exam-api restart on this slot
-    subprocess.run(['pkill', '-f', f'/term/{lab_num}/'], capture_output=True, timeout=3)
-    time.sleep(0.3)
+    print(f'[lab] Starting lab {lab_num} on :{port} (new_lease={new_lease})')
+
+    # Kill any process on this port first.
+    # NOTE: pkill -f "/term/N/" (with slash) NEVER matched ttyd because the
+    # command has "-b /term/N" without a trailing slash. Use fuser -k PORT/tcp
+    # which kills by the actual listening port — guaranteed to work.
+    subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True, timeout=5)
+
+    # For new leases, also kill the previous user's tmux session so the
+    # incoming student cannot attach to or see another student's history.
+    if new_lease:
+        subprocess.run(['tmux', 'kill-session', '-t', f'lab{lab_num}'],
+                       capture_output=True, timeout=5)
+
+    time.sleep(0.5)
 
     ttyd_procs[lab_num] = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return True
@@ -484,7 +500,7 @@ def lease_create(body):
         with lock:
             slots[lab_num]['flag_sha256'] = flag_sha256
 
-    if not start_ttyd(lab_num, password, end_time=expires_at):
+    if not start_ttyd(lab_num, password, end_time=expires_at, new_lease=True):
         release_lease(lab_num)
         return {'error': 'failed to start terminal'}, 500
 

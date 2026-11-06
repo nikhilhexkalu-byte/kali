@@ -75,11 +75,12 @@ chmod 600 "$SESSION_FILE" 2>/dev/null || true
   sleep 5
 
   # Kill all this slot's processes and ttyd so reconnection is impossible.
-  # Without killing ttyd, it would immediately spawn a new bash giving the
-  # student another hour with a 00:00 display.
+  # fuser -k PORT/tcp kills by the actual listening port — the previous
+  # pkill -f "/term/N/" pattern never worked because the ttyd command uses
+  # "-b /term/N" (no trailing slash) so the pattern never matched.
   rm -f "$SESSION_FILE"
   pkill -9 -u "$LAB_USER" 2>/dev/null || true
-  pkill -f "/term/${LAB_NUM}/" 2>/dev/null || true
+  fuser -k "$((7680 + LAB_NUM))/tcp" 2>/dev/null || true
 ) &
 TIMER_PID=$!
 
