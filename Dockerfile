@@ -20,8 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         nmap nikto sqlmap hydra john dirb gobuster whatweb wordlists \
         # lab infrastructure
         ttyd nginx-light tinyproxy iptables \
-        # in-lab browser (noVNC + Firefox)
-        firefox-esr xvfb x11vnc websockify novnc \
+        # in-lab browser support (Firefox installed post-build)
+        xvfb x11vnc websockify novnc \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ( [ -f /usr/share/wordlists/rockyou.txt.gz ] && gunzip -kf /usr/share/wordlists/rockyou.txt.gz || true )
