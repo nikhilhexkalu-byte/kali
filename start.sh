@@ -170,6 +170,7 @@ LOCATIONS_TMP="/tmp/nginx-locations.conf"
 
 for i in $(seq 1 "$MAX_LABS"); do
   INTERNAL_PORT=$((7680 + i))
+  NOVNC_PORT=$((6080 + i))
   cat >> "$LOCATIONS_TMP" <<LOCEOF
     # Terminal ${i}
     location /term/${i}/ {
@@ -179,6 +180,17 @@ for i in $(seq 1 "$MAX_LABS"); do
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
+        proxy_read_timeout 7200s;
+        proxy_send_timeout 7200s;
+    }
+
+    # In-lab browser ${i} (noVNC)
+    location /browser/${i}/ {
+        proxy_pass http://127.0.0.1:${NOVNC_PORT}/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
         proxy_read_timeout 7200s;
         proxy_send_timeout 7200s;
     }

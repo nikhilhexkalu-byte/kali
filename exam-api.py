@@ -73,6 +73,7 @@ def via_nginx(handler):
 # ── Shared state ────────────────────────────────────────────────────
 lock = threading.Lock()
 ttyd_procs = {}              # lab_num -> subprocess.Popen
+browser_procs = {}           # lab_num -> {'xvfb','firefox','x11vnc','ws'} Popen dict
 slots = {
     i: {'owner': None, 'session_id': None, 'attempt_id': None,
         'password': None, 'expires_at': 0, 'challenge_id': None,
@@ -186,6 +187,10 @@ def start_ttyd(lab_num, password=None, end_time=None, new_lease=False):
     time.sleep(0.5)
 
     ttyd_procs[lab_num] = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Start the in-lab browser alongside the terminal
+    start_browser(lab_num)
+
     return True
 
 
@@ -193,6 +198,7 @@ def stop_lab(lab_num):
     """Kill ttyd + user processes for a lab and wipe its home directory."""
     user = f'lab{lab_num}'
     print(f'[lab] Stopping lab {lab_num}')
+    stop_browser(lab_num)
 
     if lab_num in ttyd_procs:
         try:
@@ -211,6 +217,52 @@ def stop_lab(lab_num):
         ['/usr/local/bin/lab-cleanup.sh', str(lab_num)],
         capture_output=True, timeout=30,
     )
+
+
+def _kill_proc(p):
+    if p is None:
+        return
+    try:
+        p.kill(); p.wait(timeout=3)
+    except Exception:
+        pass
+
+
+def start_browser(lab_num):
+    """Start Xvfb + Firefox + x11vnc + websockify for a lab slot."""
+    stop_browser(lab_num)
+    display = f':{10 + lab_num}'
+    vnc_port = 5900 + lab_num
+    novnc_port = 6080 + lab_num
+    env = {**os.environ, 'DISPLAY': display}
+    try:
+        xvfb = subprocess.Popen(
+            ['Xvfb', display, '-screen', '0', '1280x768x24', '-ac'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(1)
+        firefox = subprocess.Popen(
+            ['firefox-esr', '--no-remote', '--new-instance', 'about:blank'],
+            env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        x11vnc = subprocess.Popen(
+            ['x11vnc', '-display', display, '-forever', '-nopw',
+             '-rfbport', str(vnc_port), '-quiet', '-noxdamage'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        ws = subprocess.Popen(
+            ['websockify', '--web', '/usr/share/novnc/',
+             str(novnc_port), f'localhost:{vnc_port}'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        browser_procs[lab_num] = {'xvfb': xvfb, 'firefox': firefox, 'x11vnc': x11vnc, 'ws': ws}
+        print(f'[browser] Lab {lab_num} browser on display {display}, noVNC :{novnc_port}')
+    except Exception as e:
+        print(f'[browser] Lab {lab_num} failed to start: {e}')
+
+
+def stop_browser(lab_num):
+    """Kill all browser processes for a lab slot."""
+    procs = browser_procs.pop(lab_num, None)
+    if procs:
+        for p in procs.values():
+            _kill_proc(p)
 
 
 # ── Challenge provisioning ─────────────────────────────────────────
