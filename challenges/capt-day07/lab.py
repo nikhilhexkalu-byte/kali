@@ -12,8 +12,13 @@ def _load_flag():
         return 'CHX{default}'
 FLAG = _load_flag()
 PORT = int(os.environ.get('SVC_PORT', '8080'))
+SLOT = os.environ.get('CHX_LAB_NUM', '1')
 
-# Internal service on port 9999 (same host)
+# Internal service on the same host as the target, last port of the slot's block.
+# Each slot gets its own (all slots share one container), and chx-guard lets only
+# this service reach it (CHX_INTERNAL_PORTS), so the flag is reachable only via SSRF.
+INTERNAL_HOST = f'127.20.{SLOT}.10'
+INTERNAL_PORT = int(os.environ.get('CHX_INTERNAL_PORTS', str(PORT + 9)).split(',')[0])
 class InternalHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_GET(self):
@@ -58,7 +63,7 @@ class H(http.server.BaseHTTPRequestHandler):
         self.send_response(200); self.send_header('Content-Type','text/html'); self.end_headers(); self.wfile.write(b.encode())
 
 def start_internal():
-    s = http.server.HTTPServer(('127.0.0.1', 9999), InternalHandler)
+    s = http.server.HTTPServer((INTERNAL_HOST, INTERNAL_PORT), InternalHandler)
     s.serve_forever()
 
 if __name__ == '__main__':

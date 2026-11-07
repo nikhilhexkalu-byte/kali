@@ -48,6 +48,8 @@ COPY exam-api.py         /exam-api.py
 COPY lab-shell.sh        /usr/local/bin/lab-shell.sh
 COPY nmap-wrapper.sh     /usr/local/bin/nmap
 COPY lab-cleanup.sh      /usr/local/bin/lab-cleanup.sh
+COPY chx-guard.py        /usr/local/lib/chx/chx-guard.py
+COPY chx-slot.sh         /usr/local/lib/chx/chx-slot.sh
 COPY lab-timer.sh        /usr/local/bin/lab-timer
 COPY tmux.conf           /etc/tmux.conf
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
@@ -60,6 +62,8 @@ RUN chmod -R 700 /opt/challenges && chmod +x /opt/challenges/*/*.sh \
     && sed -i 's/\r$//' /start.sh /usr/local/bin/lab-shell.sh /exam-api.py /usr/local/bin/nmap /usr/local/bin/lab-cleanup.sh \
     && chmod 700 /start.sh /exam-api.py /usr/local/bin/lab-shell.sh /usr/local/bin/lab-cleanup.sh \
     && chmod 755 /usr/local/bin/nmap /usr/local/bin/lab-timer \
+    && sed -i 's/\r$//' /usr/local/lib/chx/chx-slot.sh /usr/local/lib/chx/chx-guard.py \
+    && chmod 755 /usr/local/lib/chx && chmod 644 /usr/local/lib/chx/chx-guard.py && chmod 600 /usr/local/lib/chx/chx-slot.sh \
     && chmod 644 /etc/tmux.conf \
     && chmod 600 /etc/nginx/nginx.conf.template \
     && chmod 600 /etc/tinyproxy/tinyproxy.conf /etc/tinyproxy/filter.txt \

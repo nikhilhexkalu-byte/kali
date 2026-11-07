@@ -123,10 +123,11 @@ if command -v iptables &>/dev/null; then
         # Block infrastructure ports BEFORE allowing general localhost
         iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -p tcp --dport 9090 -j DROP
         iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -p tcp --dport 10000 -j DROP
-        # Block other slots' challenge ports (each slot uses 8000+lab_num)
+        # Block other slots' challenge ports (slot j owns 8100+(j-1)*10 … +9)
         for j in $(seq 1 "$MAX_LABS"); do
           if [ "$j" -ne "$i" ]; then
-            iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -p tcp --dport $((8000 + j)) -j DROP
+            b=$((8100 + (j - 1) * 10))
+            iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -p tcp --dport "${b}:$((b + 9))" -j DROP
           fi
         done
         iptables -A OUTPUT -m owner --uid-owner "$uid" -d 127.0.0.0/8 -j ACCEPT
@@ -174,7 +175,7 @@ for i in $(seq 1 "$MAX_LABS"); do
   cat >> "$LOCATIONS_TMP" <<LOCEOF
     # Terminal ${i}
     location /term/${i}/ {
-        proxy_pass http://127.0.0.1:${INTERNAL_PORT}/term/${i}/;
+        proxy_pass http://unix:/run/chx-ttyd/lab${i}.sock:/term/${i}/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -251,6 +252,14 @@ chmod -R o-rwx /var/www/landing
 # tinyproxy config dir
 chmod 750 /etc/tinyproxy
 echo "[+] Filesystem locked — lab users cannot read configs or web root"
+
+# ── Terminal sockets: root + nginx only ──────────────────────────
+# ttyd listens on /run/chx-ttyd/labN.sock (not TCP), so learners cannot reach
+# another slot's terminal even when `ps` shows its password (no hidepid here).
+install -d -o root -g www-data -m 750 /run/chx-ttyd
+# Challenge services log here, root only (was world-readable /tmp/lab-N.log)
+install -d -o root -g root -m 700 /var/log/chx
+rm -f /tmp/lab-[0-9]*.log 2>/dev/null || true
 
 # ── Start nginx ──────────────────────────────────────────────────
 echo "[*] Starting nginx on port ${PORT}..."

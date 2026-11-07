@@ -2,6 +2,7 @@
 # /opt/challenges/capt-day01/provision.sh
 # CAPT Day 01: Reconnaissance
 set -euo pipefail
+. /usr/local/lib/chx/chx-slot.sh
 
 PORT=$((8100 + (CHX_LAB_NUM - 1) * 10))
 ROOT="/srv/challenge/${CHX_LAB_USER}"
@@ -27,21 +28,21 @@ chown root:"$SVC" "$ROOT/lab.py"
 
 
 # Start the lab
+LAB_LOG="$(chx_log_path "$CHX_LAB_NUM")"
 # Kill any stale process from a previous session on this slot
 pkill -9 -u "$SVC" 2>/dev/null || true
 # Wait until the port is free so the new process can bind it
-for _i in $(seq 1 20); do ss -tln 2>/dev/null | grep -q ":${PORT}" || break; sleep 0.3; done
-sleep 0.5
+chx_free_block "$(chx_block_base "$CHX_LAB_NUM")"
 nohup runuser -u "$SVC" -- env \
   CHX_LAB_NUM="$CHX_LAB_NUM" \
   SVC_PORT="$PORT" \
-  python3 "$ROOT/lab.py" > "/tmp/lab-${CHX_LAB_NUM}.log" 2>&1 &
+  CHX_LAB_USER="$CHX_LAB_USER" \
+  python3 /usr/local/lib/chx/chx-guard.py "$ROOT/lab.py" > "$LAB_LOG" 2>&1 &
 LAB_PID=$!
 
-sleep 2
-if ! ss -tln 2>/dev/null | grep -q ":${PORT}"; then
-  echo "FATAL: lab.py not listening on :${PORT} (nohup PID=$LAB_PID). Log:" >&2
-  cat "/tmp/lab-${CHX_LAB_NUM}.log" >&2
+if ! chx_wait_listen "${SVC_PORT:-$PORT}" "$SVC"; then
+  echo "FATAL: lab.py not listening on :${SVC_PORT:-$PORT} (nohup PID=$LAB_PID). Log:" >&2
+  cat "$LAB_LOG" >&2
   exit 1
 fi
 

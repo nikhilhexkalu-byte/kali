@@ -39,6 +39,15 @@ NONCE_TTL = CLOCK_SKEW_SECONDS * 2
 
 # Challenge provisioning (owner-supplied; see CHALLENGES.md)
 CHALLENGE_DIR = os.environ.get('CHALLENGE_DIR', '/opt/challenges')
+
+# Terminals listen on UNIX sockets in a directory only root and nginx (www-data) can
+# enter. Over TCP, any learner could connect to another slot's ttyd on 127.0.0.1
+# with the password that `ps` shows them (Render has no hidepid).
+TTYD_SOCK_DIR = '/run/chx-ttyd'
+# The in-lab browser (Xvfb + Firefox + x11vnc per slot) is off unless LAB_BROWSER=true:
+# x11vnc/websockify listen on TCP without a password, so every learner could watch
+# and drive every other learner's browser, and 50 Firefox instances do not fit the box.
+LAB_BROWSER = os.environ.get('LAB_BROWSER', 'false').strip().lower() == 'true'
 CHALLENGE_ID_RE = re.compile(r'^[a-z0-9][a-z0-9_-]{0,47}$')
 
 TTYD_THEME = '{"background":"#0c0c0c","foreground":"#c8d6e5","cursor":"#ffffff","cursorAccent":"#0c0c0c","selectionBackground":"#1f3b2a","black":"#0c0c0c","red":"#ff3333","green":"#00ff41","yellow":"#ffcb6b","blue":"#5c9eff","magenta":"#c792ea","cyan":"#89ddff","white":"#c8d6e5","brightBlack":"#636e7a","brightRed":"#ff3333","brightGreen":"#00ff41","brightYellow":"#ffcb6b","brightBlue":"#5c9eff","brightMagenta":"#c792ea","brightCyan":"#89ddff","brightWhite":"#ffffff"}'
@@ -140,9 +149,10 @@ def start_ttyd(lab_num, password=None, end_time=None, new_lease=False):
         except OSError:
             pass
 
+    sock = ttyd_socket(lab_num)
     cmd = [
         'ttyd', '-W',
-        '-p', str(port),
+        '-i', sock,
         '-b', f'/term/{lab_num}',
         '-m', '2',
         '-c', f'lab{lab_num}:{pw}',
@@ -167,15 +177,19 @@ def start_ttyd(lab_num, password=None, end_time=None, new_lease=False):
             pass
         ttyd_procs[lab_num] = None
 
-    # Also kill any stray ttyd on the port (e.g. survived a watchdog restart).
-    # Use ss + kill — fuser (psmisc package) is not installed on the image.
+    # Also kill any stray ttyd for this slot (e.g. survived a watchdog restart),
+    # on its socket or on the old TCP port.
     try:
-        import re as _re
+        subprocess.run(['pkill', '-9', '-f', f'^ttyd .* -b /term/{lab_num} '], capture_output=True, timeout=3)
         r = subprocess.run(['ss', '-tlnp', f'sport = :{port}'],
                            capture_output=True, text=True, timeout=3)
-        for pid_s in _re.findall(r'pid=(\d+)', r.stdout):
+        for pid_s in re.findall(r'pid=(\d+)', r.stdout):
             subprocess.run(['kill', '-9', pid_s], capture_output=True, timeout=2)
     except Exception:
+        pass
+    try:
+        os.unlink(sock)
+    except OSError:
         pass
 
     # For new leases, also kill the previous user's tmux session so the
@@ -187,11 +201,40 @@ def start_ttyd(lab_num, password=None, end_time=None, new_lease=False):
     time.sleep(0.5)
 
     ttyd_procs[lab_num] = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if not _share_socket_with_nginx(sock):
+        print(f'[lab] ERROR: ttyd for lab {lab_num} did not open {sock}')
+        return False
 
-    # Start the in-lab browser alongside the terminal
-    start_browser(lab_num)
+    # Start the in-lab browser alongside the terminal (off unless LAB_BROWSER=true)
+    if LAB_BROWSER:
+        start_browser(lab_num)
 
     return True
+
+
+def ttyd_socket(lab_num):
+    return os.path.join(TTYD_SOCK_DIR, f'lab{int(lab_num)}.sock')
+
+
+def _share_socket_with_nginx(sock, wait_s=10.0):
+    """Wait for ttyd's socket, then make it usable by nginx (www-data) and no one else."""
+    import grp
+    try:
+        gid = grp.getgrnam('www-data').gr_gid
+    except KeyError:
+        gid = 0
+    deadline = time.time() + wait_s
+    while time.time() < deadline:
+        if os.path.exists(sock):
+            try:
+                os.chown(sock, 0, gid)
+                os.chmod(sock, 0o660)
+                return True
+            except OSError as e:
+                print(f'[lab] WARNING: could not set socket owner on {sock}: {e}')
+                return True
+        time.sleep(0.05)
+    return False
 
 
 def stop_lab(lab_num):
@@ -210,6 +253,10 @@ def stop_lab(lab_num):
             except Exception:
                 pass
         del ttyd_procs[lab_num]
+    try:
+        os.unlink(ttyd_socket(lab_num))
+    except OSError:
+        pass
 
     teardown_challenge(lab_num)
 
@@ -235,6 +282,7 @@ def start_browser(lab_num):
     vnc_port = 5900 + lab_num
     novnc_port = 6080 + lab_num
     env = {**os.environ, 'DISPLAY': display}
+    xvfb = firefox = x11vnc = None
     try:
         xvfb = subprocess.Popen(
             ['Xvfb', display, '-screen', '0', '1280x768x24', '-ac'],
@@ -254,6 +302,8 @@ def start_browser(lab_num):
         browser_procs[lab_num] = {'xvfb': xvfb, 'firefox': firefox, 'x11vnc': x11vnc, 'ws': ws}
         print(f'[browser] Lab {lab_num} browser on display {display}, noVNC :{novnc_port}')
     except Exception as e:
+        for p in (x11vnc, firefox, xvfb):
+            _kill_proc(p)
         print(f'[browser] Lab {lab_num} failed to start: {e}')
 
 

@@ -76,7 +76,8 @@ so the learner is never charged an attempt for your script breaking.
 # /opt/challenges/web-basic/provision.sh
 set -euo pipefail
 
-PORT=$((8000 + CHX_LAB_NUM))
+. /usr/local/lib/chx/chx-slot.sh          # chx_block_base, chx_free_block, chx_wait_listen, chx_log_path
+PORT="$(chx_block_base "$CHX_LAB_NUM")"    # slot N owns 8100+(N-1)*10 … +9; use only those
 ROOT="/srv/challenge/${CHX_LAB_USER}"
 
 rm -rf "$ROOT"; mkdir -p "$ROOT"
@@ -126,12 +127,36 @@ candidate can simply read or execute is a shortcut around it:
 - Own `/srv/challenge/<user>` and everything in it `root` or the per-slot service
   user, never `CHX_LAB_USER`, and never put `CHX_LAB_USER` in the service user's
   group (or the service user in the candidate's group).
-- A SUID helper must be mode `4750` owned `root:<service-user>`, so only a shell
-  obtained through the challenge can run it. `4750 root:<candidate>` hands over
-  root in one command.
+- A SUID helper must be mode `4750` owned `flag-chx<N>:<service-user>` (a per-slot
+  flag user that owns `flag.txt`, mode `400`), so only a shell obtained through the
+  challenge can run it. Never SUID **root**: every slot shares one container, so
+  root there is every other learner's lab plus the lab secrets.
+  `4750 root:<candidate>` hands over root in one command.
 - The challenge source and its database are the answer key (credentials, record
   counts, versions). Keep them `640`/`600` away from the candidate's group.
 - `chown` clears the SUID bit, so always `chown` before `chmod 4750`.
 - Verify it: as `CHX_LAB_USER`, `ls`, `cat` the source, read the database and run
   the SUID helper. Every one of those must fail. Then, as the service user, run
   the helper and read the flag — that must succeed.
+
+---
+
+## Isolation between learners (all slots share one container)
+
+Render gives the container neither iptables nor hidepid, so these rules carry
+the isolation. Every challenge must follow them:
+
+- **Start the service through the guard**:
+  `runuser -u "$SVC" -- env CHX_LAB_USER="$CHX_LAB_USER" ... python3 /usr/local/lib/chx/chx-guard.py "$ROOT/lab.py"`.
+  It answers only root, the service user and that slot's learner (others get 403).
+- **Ports**: only the slot's block (`chx_block_base`, 10 ports). Call
+  `chx_free_block "$PORT"` before starting and `chx_wait_listen "$PORT" "$SVC"`
+  after (it checks the port is held by the service user, not a squatter).
+- **Internal services** (the ones an SSRF should reach): bind them to the target's
+  own address on a port in the block and list that port in `CHX_INTERNAL_PORTS`,
+  so only the service itself can reach it. Never a fixed `127.0.0.1:<port>`: that
+  is shared by every slot and reachable by every learner.
+- **Files**: nothing shared under `/tmp`. Uploads, databases and scratch space live
+  under `$ROOT`; service logs go to `$(chx_log_path "$CHX_LAB_NUM")` (root only).
+- `lab-cleanup.sh` kills the learner's, `web-chx<N>`, `www-chx<N>` and `flag-chx<N>`
+  processes and wipes `$ROOT`; use those user names.

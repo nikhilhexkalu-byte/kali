@@ -69,6 +69,12 @@ TTYD_PID=$PPID
 
   sleep 55 2>/dev/null
 
+  # Only end THIS session. If the slot was released and leased to someone else
+  # meanwhile, the deadline file is gone or holds the new lease's deadline: a
+  # stale countdown must never kill the next learner's shell.
+  still_mine() { [ "$(cat "$LAB_END_FILE" 2>/dev/null || echo "")" = "$END_TIME" ]; }
+  still_mine || exit 0
+
   echo ""
   echo -e "\033[1;31m"
   echo "╔══════════════════════════════════════════════════════╗"
@@ -77,6 +83,7 @@ TTYD_PID=$PPID
   echo -e "\033[0m"
 
   sleep 5
+  still_mine || exit 0
 
   # Kill all this slot's processes, then kill ttyd directly by PID.
   # fuser (psmisc) is not installed on the image; kill $TTYD_PID is simpler

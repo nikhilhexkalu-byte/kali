@@ -13,8 +13,13 @@ def _load_flag():
 FLAG = _load_flag()
 PORT = int(os.environ.get('SVC_PORT', '8080'))
 DEBUG_TOKEN = hashlib.sha256(('debug-' + FLAG).encode()).hexdigest()[:32]
+SLOT = os.environ.get('CHX_LAB_NUM', '1')
 
-# Internal admin API on 127.0.0.1:9998
+# Internal admin API on the target host, one per slot (all slots share one container).
+# chx-guard lets only this service reach it (CHX_INTERNAL_PORTS), so the SSRF is required.
+INTERNAL_HOST = f'127.20.{SLOT}.10'
+INTERNAL_PORT = int(os.environ.get('CHX_INTERNAL_PORTS', str(PORT + 8)).split(',')[0])
+INTERNAL_ADDR = f'{INTERNAL_HOST}:{INTERNAL_PORT}'
 class InternalAdmin(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_GET(self):
@@ -71,14 +76,14 @@ class H(http.server.BaseHTTPRequestHandler):
             self._html(f'<h1>Debug Output</h1><pre>$ {html.escape(cmd)}\n{html.escape(output)}</pre><form action="/debug"><input type="hidden" name="token" value="{html.escape(token)}"><input name="cmd"><button>Run</button></form>')
         elif path == '/admin-api' or path == '/admin-api/status':
             self.send_response(403); self.send_header('Content-Type','text/html'); self.end_headers()
-            self.wfile.write(b'<h1>403</h1><p>Admin API is internal only. Access via 127.0.0.1:9998.</p>')
+            self.wfile.write(f'<h1>403</h1><p>Admin API is internal only. Access via {INTERNAL_ADDR}.</p>'.encode())
         else:
             self.send_response(404); self.end_headers(); self.wfile.write(b'404')
     def _html(self, b):
         self.send_response(200); self.send_header('Content-Type','text/html'); self.end_headers(); self.wfile.write(b.encode())
 
 def start_internal():
-    http.server.HTTPServer(('127.0.0.1', 9998), InternalAdmin).serve_forever()
+    http.server.HTTPServer((INTERNAL_HOST, INTERNAL_PORT), InternalAdmin).serve_forever()
 
 if __name__ == '__main__':
     threading.Thread(target=start_internal, daemon=True).start()
