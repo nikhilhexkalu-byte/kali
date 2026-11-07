@@ -22,7 +22,8 @@ done
 tmux kill-session -t "lab${LAB_NUM}" 2>/dev/null || true
 
 # ── Kill the per-slot web service user ────────────────────────────
-pkill -9 -u "www-chx${LAB_NUM}" 2>/dev/null || true
+# Challenge processes run as web-chx${N} (not www-chx${N})
+pkill -9 -u "web-chx${LAB_NUM}" 2>/dev/null || true
 
 # ── Wipe and atomically recreate the home directory ───────────────
 # Removes the entire directory (no symlink following) then recreates

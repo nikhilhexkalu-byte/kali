@@ -28,7 +28,9 @@ chown root:"$SVC" "$ROOT/lab.py"
 
 # Start the lab
 # Kill any stale process from a previous session on this slot
-pkill -u "$SVC" 2>/dev/null || true
+pkill -9 -u "$SVC" 2>/dev/null || true
+# Wait until the port is free so the new process can bind it
+for _i in $(seq 1 20); do ss -tln 2>/dev/null | grep -q ":${PORT}" || break; sleep 0.3; done
 sleep 0.5
 nohup runuser -u "$SVC" -- env \
   CHX_LAB_NUM="$CHX_LAB_NUM" \
