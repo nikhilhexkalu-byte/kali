@@ -50,6 +50,10 @@ WARNING_TIME=$((SESSION_TIMEOUT - 60))
 echo "$(date +%s)" > "$SESSION_FILE"
 chmod 600 "$SESSION_FILE" 2>/dev/null || true
 
+# Capture ttyd PID now (PPID of this script = ttyd) so the background
+# subshell can kill it without needing fuser (psmisc not installed).
+TTYD_PID=$PPID
+
 # Background countdown — warns at T-60s, kills at T-0
 (
   sleep "$WARNING_TIME" 2>/dev/null
@@ -74,13 +78,12 @@ chmod 600 "$SESSION_FILE" 2>/dev/null || true
 
   sleep 5
 
-  # Kill all this slot's processes and ttyd so reconnection is impossible.
-  # fuser -k PORT/tcp kills by the actual listening port — the previous
-  # pkill -f "/term/N/" pattern never worked because the ttyd command uses
-  # "-b /term/N" (no trailing slash) so the pattern never matched.
+  # Kill all this slot's processes, then kill ttyd directly by PID.
+  # fuser (psmisc) is not installed on the image; kill $TTYD_PID is simpler
+  # and more reliable — PPID of this script is always the ttyd process.
   rm -f "$SESSION_FILE"
   pkill -9 -u "$LAB_USER" 2>/dev/null || true
-  fuser -k "$((7680 + LAB_NUM))/tcp" 2>/dev/null || true
+  kill -9 "$TTYD_PID" 2>/dev/null || true
 ) &
 TIMER_PID=$!
 

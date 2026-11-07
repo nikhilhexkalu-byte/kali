@@ -156,11 +156,26 @@ def start_ttyd(lab_num, password=None, end_time=None, new_lease=False):
 
     print(f'[lab] Starting lab {lab_num} on :{port} (new_lease={new_lease})')
 
-    # Kill any process on this port first.
-    # NOTE: pkill -f "/term/N/" (with slash) NEVER matched ttyd because the
-    # command has "-b /term/N" without a trailing slash. Use fuser -k PORT/tcp
-    # which kills by the actual listening port — guaranteed to work.
-    subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True, timeout=5)
+    # Kill existing ttyd via stored Popen handle (most reliable path)
+    existing = ttyd_procs.get(lab_num)
+    if existing is not None:
+        try:
+            existing.kill()
+            existing.wait(timeout=3)
+        except Exception:
+            pass
+        ttyd_procs[lab_num] = None
+
+    # Also kill any stray ttyd on the port (e.g. survived a watchdog restart).
+    # Use ss + kill — fuser (psmisc package) is not installed on the image.
+    try:
+        import re as _re
+        r = subprocess.run(['ss', '-tlnp', f'sport = :{port}'],
+                           capture_output=True, text=True, timeout=3)
+        for pid_s in _re.findall(r'pid=(\d+)', r.stdout):
+            subprocess.run(['kill', '-9', pid_s], capture_output=True, timeout=2)
+    except Exception:
+        pass
 
     # For new leases, also kill the previous user's tmux session so the
     # incoming student cannot attach to or see another student's history.
