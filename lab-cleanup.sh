@@ -38,6 +38,9 @@ else
   runuser -u "${LAB_USER}" -- install -m 644 /dev/stdin "${HOME_DIR}/.bashrc" < /etc/skel/.bashrc
 fi
 runuser -u "${LAB_USER}" -- install -m 644 /dev/stdin "${HOME_DIR}/.profile" < /etc/skel/.profile
+# Suppress the Kali minimal-install MOTD ("Message from Kali developers")
+touch "${HOME_DIR}/.hushlogin"
+chown "${LAB_USER}:${LAB_USER}" "${HOME_DIR}/.hushlogin" 2>/dev/null || true
 
 # ── Clean /tmp files owned by the lab user ────────────────────────
 find /tmp -maxdepth 2 -user "$LAB_USER" -exec rm -rf {} + 2>/dev/null || true

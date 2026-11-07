@@ -224,6 +224,11 @@ unset INTERNAL_TOKEN  # no longer needed — baked into nginx.conf, on disk at /
 echo "[+] Nginx config generated (${MAX_LABS} terminal locations)"
 chmod 600 /etc/nginx/nginx.conf
 
+# ── Suppress Kali minimal-install MOTD for all lab users ─────────
+for i in $(seq 1 "$MAX_LABS"); do
+  touch "/home/lab${i}/.hushlogin" 2>/dev/null || true
+done
+
 # ── Lock down directories from lab users ─────────────────────────
 # nginx dir — only root + www-data (nginx worker) can enter
 chown root:www-data /etc/nginx
